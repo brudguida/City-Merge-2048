@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>City Merge 2048</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Poppins', sans-serif; background-color: #89cff0; width: 100vw; height: 100vh; height: 100dvh; }
+        #bg-layer { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; z-index: 0; background-image: url('https://qmxypscqrwkgjwfstusu.supabase.co/storage/v1/object/public/Background%20and%20music/city_background.png'); background-size: cover; background-position: center bottom; background-repeat: no-repeat; pointer-events: none; }
+        
+        #game-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; z-index: 1; touch-action: none; }
+        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; z-index: 10; pointer-events: none; display: flex; flex-direction: column; }
+        .pointer-events-auto { pointer-events: auto; cursor: pointer; }
+        .glass-panel { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+        .title-shadow { text-shadow: 0px 4px 10px rgba(0,0,0,0.6); }
+        .news-serif { font-family: 'Georgia', 'Times New Roman', Times, serif; }
+        .demolish-active { background: rgba(239, 68, 68, 0.9) !important; border-color: #ef4444 !important; color: white !important; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+    </style>
+</head>
+<body>
+
+    <div id="bg-layer"></div>
+    <div id="game-container"></div>
+
+    <div id="ui-layer">
+        <!-- Dashboard Header -->
+        <div class="p-2 sm:p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center w-full max-w-6xl mx-auto gap-2 md:gap-4">
+            <div class="flex items-center justify-between w-full md:w-auto">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <div>
+                        <h1 class="text-lg sm:text-2xl md:text-3xl font-black text-white title-shadow tracking-tight">City Merge 2048</h1>
+                        <p class="text-white/90 text-[9px] sm:text-[10px] md:text-xs font-bold title-shadow mt-0.5">Gerencie sua metrópole!</p>
+                    </div>
+                </div>
+                
+                <!-- Menu Buttons -->
+                <div class="flex gap-1.5 sm:gap-2 ml-2">
+                    <!-- Audio Settings Button -->
+                    <div class="glass-panel p-1.5 sm:p-2 md:px-3 md:py-2 rounded-xl flex items-center justify-center cursor-pointer hover:bg-white/80 active:scale-95 transition-all pointer-events-auto shadow-sm" title="Configurações de Áudio" onclick="openAudioSettings()">
+                        <span class="text-lg sm:text-xl leading-none drop-shadow-sm">🔊</span>
+                    </div>
+                    <!-- Guide Button -->
+                    <div class="glass-panel p-1.5 sm:p-2 md:px-3 md:py-2 rounded-xl flex items-center justify-center cursor-pointer hover:bg-white/80 active:scale-95 transition-all pointer-events-auto shadow-sm" title="Como Jogar" onclick="openGuide()">
+                        <span class="text-lg sm:text-xl leading-none drop-shadow-sm">📖</span>
+                    </div>
+                    <!-- Leaderboard Button -->
+                    <div class="glass-panel p-1.5 sm:p-2 md:px-3 md:py-2 rounded-xl flex items-center justify-center cursor-pointer hover:bg-white/80 active:scale-95 transition-all pointer-events-auto shadow-sm" title="Placar de Líderes" id="btn-leaderboard">
+                        <span class="text-lg sm:text-xl leading-none drop-shadow-sm">🏆</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compact Metrics Bar -->
+            <div class="flex flex-wrap gap-1.5 sm:gap-2 w-full md:w-auto">
+                <div class="glass-panel px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl flex items-center justify-center gap-1 sm:gap-2 flex-[1_1_45%] md:flex-none min-w-[75px] sm:min-w-[90px]" title="Calendário">
+                    <span class="text-base sm:text-lg leading-none">📅</span>
+                    <span class="text-[11px] sm:text-sm md:text-base font-bold text-slate-900 leading-none whitespace-nowrap" id="date">Ano 1, Sem 1</span>
+                </div>
+                <div class="glass-panel px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl flex items-center justify-center gap-1 sm:gap-2 flex-[1_1_45%] md:flex-none min-w-[75px] sm:min-w-[90px] bg-blue-50/50" title="População">
+                    <span class="text-base sm:text-lg leading-none">👥</span>
+                    <span class="text-[11px] sm:text-sm md:text-base font-black text-blue-700 leading-none" id="population">0</span>
+                </div>
+                <div class="glass-panel px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl flex items-center justify-center gap-1 sm:gap-2 flex-[1_1_45%] md:flex-none min-w-[75px] sm:min-w-[90px] bg-green-50/50" title="Felicidade">
+                    <span class="text-base sm:text-lg leading-none">💚</span>
+                    <span class="text-[11px] sm:text-sm md:text-base font-black text-green-600 leading-none" id="happiness">0</span>
+                </div>
+                <div class="glass-panel px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl flex items-center justify-center gap-1 sm:gap-2 flex-[1_1_45%] md:flex-none min-w-[75px] sm:min-w-[90px] bg-yellow-50/50" title="Fundos">
+                    <span class="text-base sm:text-lg leading-none">💰</span>
+                    <span class="text-[11px] sm:text-sm md:text-base font-black text-yellow-700 leading-none transition-colors" id="funds">$50</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tool Buttons -->
+        <div class="absolute bottom-16 right-3 sm:right-4 md:right-6 md:bottom-20 landscape:bottom-16 landscape:right-10 flex flex-col gap-2 sm:gap-3 pointer-events-auto z-20 transition-all">
+            <button id="btn-undo" onclick="doUndo()" class="glass-panel w-11 h-11 sm:w-14 sm:h-14 rounded-full font-bold flex flex-col items-center justify-center hover:bg-white/90 active:scale-95 transition-all shadow-lg opacity-50 pointer-events-none" title="Desfazer Último Movimento">
+                <span class="text-lg sm:text-xl drop-shadow-md leading-none mb-0.5">↩️</span>
+                <span class="text-[8px] sm:text-[10px] text-yellow-700 font-black leading-none">-$25</span>
+            </button>
+            <button id="btn-demolish" onclick="toggleDemolish()" class="glass-panel w-11 h-11 sm:w-14 sm:h-14 rounded-full font-bold flex flex-col items-center justify-center hover:bg-white/90 active:scale-95 transition-all shadow-lg" title="Demolir Construção">
+                <span class="text-lg sm:text-xl drop-shadow-md leading-none mb-0.5">🧨</span>
+                <span class="text-[8px] sm:text-[10px] text-yellow-700 font-black leading-none transition-colors" id="demolish-price">-$50</span>
+            </button>
+        </div>
+
+        <!-- Dynamic Message Box -->
+        <div class="absolute bottom-28 left-3 sm:left-4 md:bottom-24 md:left-6 landscape:bottom-auto landscape:top-[55%] landscape:-translate-y-1/2 landscape:left-8 w-[calc(100%-70px)] sm:w-[calc(100%-80px)] md:w-[calc(100%-100px)] landscape:w-80 max-w-sm pointer-events-auto z-10 flex flex-col gap-2 transition-all duration-500">
+            <div id="msg-box" class="glass-panel bg-white/95 rounded-2xl p-2.5 sm:p-3 md:p-4 shadow-2xl flex gap-3 sm:gap-4 items-center border-l-4 border-blue-500 w-full transform transition-all duration-300 translate-y-0 opacity-0 transition-colors">
+                <div id="msg-avatar" class="text-2xl sm:text-3xl md:text-4xl bg-slate-100 rounded-full w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center shrink-0 shadow-sm">👩‍💼</div>
+                <div class="flex flex-col justify-center">
+                    <span id="msg-sender" class="text-[10px] sm:text-[11px] md:text-xs font-black text-slate-500 uppercase tracking-wider">Secretária Sarah</span>
+                    <span id="msg-text" class="text-xs sm:text-sm md:text-base font-bold text-slate-800 leading-tight mt-1">Bem-vindo!</span>
+                </div>
+            </div>
+            <button id="btn-restart" onclick="restartGame()" class="hidden w-full glass-panel bg-slate-900/95 border border-slate-700 text-white font-black py-2.5 sm:py-3 rounded-xl shadow-2xl hover:bg-slate-800 active:scale-95 transition-all text-center tracking-widest uppercase text-sm sm:text-base">
+                Começar Nova Cidade
+            </button>
+        </div>
+
+        <!-- ONBOARDING MODAL -->
+        <div id="onboarding-modal" class="absolute inset-0 bg-slate-900/90 backdrop-blur-md flex items-center justify-center pointer-events-auto z-[100]">
+            <div class="bg-[#f4f1ea] p-6 md:p-8 rounded-3xl shadow-2xl max-w-lg w-full mx-4 flex flex-col border-2 border-blue-200 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-3 bg-blue-500"></div>
+
+                <div class="flex items-center gap-4 mb-5 mt-2 border-b-2 border-slate-300 pb-4">
+                    <div class="text-5xl bg-white rounded-full w-20 h-20 flex items-center justify-center shrink-0 shadow-md border-2 border-blue-100">👩‍💼</div>
+                    <div>
+                        <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">Bem-vindo, Prefeito!</h2>
+                        <p class="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider mt-1">Secretária Sarah</p>
+                    </div>
+                </div>
+
+                <div class="text-slate-800 space-y-4 font-medium text-xs sm:text-sm md:text-base mb-6">
+                    <p>Que bom que você está aqui. Cidadópolis precisa da sua liderança para se tornar uma metrópole vibrante!</p>
+                    <ul class="space-y-3 bg-white/60 p-4 rounded-xl border border-slate-300 shadow-sm">
+                        <li class="flex gap-3 items-start"><span class="text-lg leading-none">👆</span> <span class="leading-snug"><strong>Deslize para mover</strong> todas as construções. Construções idênticas se fundem e evoluem!</span></li>
+                        <li class="flex gap-3 items-start"><span class="text-lg leading-none">🌳</span> <span class="leading-snug"><strong>Parques são prédios especiais.</strong> Só se fundem com outros parques e geram serviços para a cidade.</span></li>
+                        <li class="flex gap-3 items-start"><span class="text-lg leading-none">🚨</span> <span class="leading-snug"><strong>Eventos de Crise</strong> impedem a fusão. Deslize seus edifícios de serviço para perto da emergência para resolvê-la!</span></li>
+                        <li class="flex gap-3 items-start"><span class="text-lg leading-none">💰</span> <span class="leading-snug"><strong>De olho nos Fundos!</strong> Use Desfazer (↩️) ou Demolir (🧨) se ficar preso.</span></li>
+                    </ul>
+                    <p class="font-bold text-blue-700 text-center text-sm md:text-lg">Você está pronto para construir seu legado?</p>
+                </div>
+
+                <button onclick="dismissOnboarding()" class="w-full bg-blue-600 text-white font-black py-3.5 sm:py-4 rounded-xl hover:bg-blue-700 active:scale-95 transition-all text-base sm:text-lg tracking-widest uppercase shadow-[0_0_15px_rgba(37,99,235,0.4)] border-2 border-blue-500">
+                    Começar a Construir!
+                </button>
+            </div>
+        </div>
+
+        <!-- NEWSPAPER POP-UP -->
+        <div id="newspaper-modal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center pointer-events-auto z-40">
+            <div class="bg-[#f4f1ea] p-4 sm:p-6 md:p-10 shadow-2xl max-w-2xl w-full mx-4 transform transition-all border border-slate-300 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+                <div class="text-center border-b-[5px] border-double border-slate-800 pb-3 sm:pb-4 mb-4 sm:mb-6">
+                    <h2 class="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-widest news-serif">O Clarim da Cidade</h2>
+                    <div class="flex justify-between items-center text-[9px] sm:text-[10px] md:text-xs text-slate-700 uppercase tracking-widest mt-2 sm:mt-3 border-t border-slate-400 pt-2 font-bold font-sans">
+                        <span id="news-date">Fim do Ano 1</span>
+                        <span id="news-edition" class="text-red-700 font-black">Edição Anual</span>
+                        <span>10 Centavos</span>
+                    </div>
+                </div>
+                <div class="text-center mb-6 sm:mb-8">
+                    <h3 id="news-headline" class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 leading-tight mb-3 sm:mb-4 news-serif">MANCHETE AQUI</h3>
+                    <p id="news-body" class="text-slate-800 text-[13px] sm:text-sm md:text-base leading-relaxed text-justify mb-4 sm:mb-5 news-serif">Texto da notícia.</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 border-t border-b border-slate-400 py-2 sm:py-3 mt-3 sm:mt-4 bg-[#ede8df]">
+                        <div>
+                            <div class="text-[8px] sm:text-[9px] md:text-[10px] text-slate-500 uppercase font-sans font-bold tracking-wider">Cresc. Pop.</div>
+                            <div class="text-lg sm:text-xl md:text-2xl font-black text-blue-700 font-sans" id="news-pop">+0</div>
+                        </div>
+                        <div>
+                            <div class="text-[8px] sm:text-[9px] md:text-[10px] text-slate-500 uppercase font-sans font-bold tracking-wider">Aum. Felic.</div>
+                            <div class="text-lg sm:text-xl md:text-2xl font-black text-green-700 font-sans" id="news-hap">+0</div>
+                        </div>
+                        <div class="border-t md:border-t-0 md:border-l border-slate-400 pt-2 md:pt-0 md:pl-3">
+                            <div class="text-[8px] sm:text-[9px] md:text-[10px] text-slate-500 uppercase font-sans font-bold tracking-wider">Arrecadação</div>
+                            <div class="text-lg sm:text-xl md:text-2xl font-black text-emerald-600 font-sans" id="news-tax">+$0</div>
+                        </div>
+                        <div class="border-t md:border-t-0 pt-2 md:pt-0">
+                            <div class="text-[8px] sm:text-[9px] md:text-[10px] text-slate-500 uppercase font-sans font-bold tracking-wider">Manutenção</div>
+                            <div class="text-lg sm:text-xl md:text-2xl font-black text-red-600 font-sans" id="news-upkeep">-$0</div>
+                        </div>
+                    </div>
+                </div>
+                <button id="news-btn" onclick="closeNewspaper()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-sans font-bold py-3 sm:py-4 px-4 sm:px-6 rounded transition-colors text-base sm:text-lg uppercase tracking-widest shadow-lg border-2 border-slate-900 hover:border-slate-700 active:scale-95">
+                    Começar Novo Ano
+                </button>
+            </div>
+        </div>
+
+        <!-- AUDIO SETTINGS MODAL -->
+        <div id="audio-modal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center pointer-events-auto z-50">
+            <div class="bg-[#f4f1ea] p-4 sm:p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 flex flex-col border border-slate-300 pointer-events-auto">
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900 mb-4 text-center news-serif tracking-wide border-b-2 border-slate-300 pb-3 flex justify-center items-center gap-2">
+                    <span>⚙️</span> Configurações de Áudio
+                </h2>
+                
+                <div class="flex flex-col gap-3 mb-6 bg-white rounded-xl p-3 border border-slate-200">
+                    <!-- Music Toggle -->
+                    <label class="flex justify-between items-center cursor-pointer p-2 hover:bg-slate-50 rounded-lg transition-colors">
+                        <span class="text-sm sm:text-base font-bold text-slate-800">Música de Fundo</span>
+                        <div class="relative flex items-center">
+                            <input type="checkbox" id="music-toggle" class="sr-only peer" checked onchange="toggleMusic(this.checked)">
+                            <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div>
+                        </div>
+                    </label>
+                    <div class="h-px bg-slate-200 w-full"></div>
+                    <!-- SFX Toggle -->
+                    <label class="flex justify-between items-center cursor-pointer p-2 hover:bg-slate-50 rounded-lg transition-colors">
+                        <span class="text-sm sm:text-base font-bold text-slate-800">Efeitos Sonoros</span>
+                        <div class="relative flex items-center">
+                            <input type="checkbox" id="sfx-toggle" class="sr-only peer" checked onchange="toggleSfx(this.checked)">
+                            <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div>
+                        </div>
+                    </label>
+                </div>
+                
+                <button onclick="closeAudioSettings()" class="w-full bg-slate-900 text-white font-bold py-2.5 sm:py-3.5 rounded-xl hover:bg-slate-800 active:scale-95 transition-all uppercase tracking-widest text-xs sm:text-sm shadow-md">Fechar Configurações</button>
+            </div>
+        </div>
+
+        <!-- GUIDE MODAL -->
+        <div id="guide-modal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center pointer-events-auto z-50">
+            <div class="bg-[#f4f1ea] p-4 sm:p-6 rounded-2xl shadow-2xl max-w-md w-full mx-4 flex flex-col max-h-[85vh] border border-slate-300 pointer-events-auto">
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900 mb-2 sm:mb-3 text-center news-serif tracking-wide border-b-2 border-slate-300 pb-2 sm:pb-3 flex justify-center items-center gap-2">
+                    <span>📖</span> Manual do Prefeito
+                </h2>
+                <div class="overflow-y-auto custom-scroll flex-1 mb-3 sm:mb-4 pr-2 text-[11px] sm:text-[13px] md:text-sm text-slate-800 space-y-3 sm:space-y-4 font-medium leading-relaxed pointer-events-auto">
+                    <p><strong class="text-slate-900 block text-sm sm:text-base mb-0.5 sm:mb-1">🏙️ O Objetivo</strong>Deslize para mover todas as construções na grade. Construções idênticas se fundem e evoluem! Seu objetivo é criar a maior cidade possível.</p>
+                    <p><strong class="text-slate-900 block text-sm sm:text-base mb-0.5 sm:mb-1">🌳 Parques e Especiais</strong>Parques só se fundem com outros parques. Conforme sobem de nível, eles aumentam muito a Felicidade e eventualmente gerarão Serviços da Cidade (Hospital, Polícia, Bombeiros).</p>
+                    <p><strong class="text-slate-900 block text-sm sm:text-base mb-0.5 sm:mb-1">🚨 Eventos de Crise</strong>Quando uma crise acontece, a fusão é desativada! Em vez disso, você deve deslizar as linhas e colunas para colocar o edifício de serviço correto ao lado da construção em crise antes que o tempo acabe.</p>
+                    <p><strong class="text-slate-900 block text-sm sm:text-base mb-0.5 sm:mb-1">💰 Economia e Moral</strong>Mantenha seus Fundos e Felicidade altos! Se a Felicidade ficar negativa, seus prédios mais altos começarão a desabar. Fundir rapidamente concede bônus de felicidade!</p>
+                    <p><strong class="text-slate-900 block text-sm sm:text-base mb-0.5 sm:mb-1">🛠️ Ferramentas</strong>Erros acontecem. Use a ferramenta <strong class="text-yellow-700">Desfazer (↩️)</strong> por $25. Se ficar sem espaço ou tiver prédios abandonados, use a ferramenta <strong class="text-red-600">Demolir (🧨)</strong> por $50 para explodi-los.</p>
+                </div>
+                <button onclick="closeGuide()" class="w-full bg-blue-600 text-white font-bold py-2.5 sm:py-3.5 rounded-xl hover:bg-blue-700 active:scale-95 transition-all uppercase tracking-widest text-xs sm:text-sm shadow-md">Vamos Construir!</button>
+            </div>
+        </div>
+
+        <!-- LEADERBOARD & GAME OVER MODALS -->
+        <div id="name-modal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center pointer-events-auto z-50">
+            <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900 mb-2">Cidade Concluída!</h2>
+                <p class="text-slate-600 mb-4 sm:mb-6 text-xs sm:text-sm">Digite seu nome para salvar seu legado.</p>
+                <div class="flex gap-3 sm:gap-4 justify-center mb-4 sm:mb-6 text-xs sm:text-sm">
+                    <div><span class="font-bold block text-blue-600 text-lg sm:text-xl" id="final-pop">0</span>Pop.</div>
+                    <div><span class="font-bold block text-green-600 text-lg sm:text-xl" id="final-hap">0</span>Felic.</div>
+                    <div><span class="font-bold block text-slate-800 text-lg sm:text-xl" id="final-year">1</span>Ano</div>
+                </div>
+                <input type="text" id="player-name" placeholder="Nome do Prefeito" class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 sm:px-4 py-2 sm:py-3 mb-3 sm:mb-4 font-bold text-center outline-none focus:border-blue-500 transition-colors text-sm sm:text-base pointer-events-auto" maxlength="15">
+                <div class="flex gap-2">
+                    <button id="btn-skip-score" class="flex-1 bg-slate-200 text-slate-700 font-bold py-2.5 sm:py-3 rounded-xl hover:bg-slate-300 active:scale-95 transition-all text-sm">Pular</button>
+                    <button id="btn-submit-score" class="flex-1 bg-blue-600 text-white font-bold py-2.5 sm:py-3 rounded-xl hover:bg-blue-700 active:scale-95 transition-all text-sm">Salvar Pontuação</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="leaderboard-modal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center pointer-events-auto z-50">
+            <div class="bg-[#f4f1ea] p-4 sm:p-6 rounded-2xl shadow-2xl max-w-md w-full mx-4 flex flex-col max-h-[80vh] border border-slate-300 pointer-events-auto">
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900 mb-4 text-center flex items-center justify-center gap-2 news-serif tracking-wide">🏆 Hall dos Prefeitos</h2>
+                <div class="overflow-y-auto custom-scroll flex-1 mb-4 border-t border-b border-slate-400 py-2 bg-[#ede8df]" id="leaderboard-list">
+                    <div class="text-center text-slate-500 py-4 font-bold animate-pulse">Carregando recordes...</div>
+                </div>
+                <button id="btn-close-leaderboard" class="w-full bg-slate-900 text-white font-bold py-2.5 sm:py-3 rounded-xl hover:bg-slate-800 active:scale-95 transition-all uppercase tracking-widest text-xs sm:text-sm">Fechar Hall</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        // --- SUPABASE CONFIGURATION ---
+        const SUPABASE_URL = 'https://qmxypscqrwkgjwfstusu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFteHlwc2NxcndrZ2p3ZnN0dXN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMTIwNjIsImV4cCI6MjA5MDg4ODA2Mn0.G_-RowZts9Fd2L-s8Fw_ikQIBU4ojNcZniQcJmaWOhs';
+
+        let supabase = null;
+        let isSupabaseEnabled = false;
+
+        if (SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE') {
+            supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            isSupabaseEnabled = true;
+        }
+
+        // --- AUDIO ENGINE VARIABLES ---
+        // Lowered max music volume significantly
+        const MAX_MUSIC_REAL_VOLUME = 0.06; 
+        let isMusicMuted = false;
+        let isSfxMuted = false;
+        let sfxVolume = 1.0;
+        let bgMusic = null;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!bgMusic) {
+                bgMusic = new Audio('https://qmxypscqrwkgjwfstusu.supabase.co/storage/v1/object/public/Background%20and%20music/skyline-snapshots.mp3');
+                bgMusic.loop = true;
+                bgMusic.volume = MAX_MUSIC_REAL_VOLUME;
+                if (!isMusicMuted) {
+                    bgMusic.play().catch(e => console.warn('BGM play prevented', e));
+                }
+            } else if (bgMusic.paused && !isMusicMuted) {
+                bgMusic.play().catch(e => console.warn('BGM play prevented', e));
+            }
+
+            try {
+                if (!audioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new AudioContext();
+                    // Play a silent dummy sound to force the context to unlock
+                    const buffer = audioCtx.createBuffer(1, 1, 22050);
+                    const source = audioCtx.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioCtx.destination);
+                    source.start(0);
+                }
+                // ALWAYS try to resume if suspended, don't rely on a one-time boolean
+                // because browsers may suspend the context automatically when background media pauses.
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch (e) { console.error("Audio block: Canvas Iframe likely restricts Web Audio API.", e); }
+        }
+
+        ['click', 'touchstart', 'touchend', 'mousedown', 'keydown', 'pointerdown'].forEach(evt => {
+            window.addEventListener(evt, initAudio, { capture: true, passive: true });
+            document.addEventListener(evt, initAudio, { capture: true, passive: true });
+        });
+
+        // 100% Silence Guaranteed Sound Engine
+        const sfx = {
+            playTone: (freq, type, duration, vol=0.15, freqSlide=null) => {
+                if (isSfxMuted) return;
+                initAudio(); 
+                if(!audioCtx) return;
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    if(freqSlide) osc.frequency.linearRampToValueAtTime(freqSlide, audioCtx.currentTime + duration);
+                    const targetVol = vol * sfxVolume;
+                    gain.gain.setValueAtTime(Math.max(targetVol, 0.0001), audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + duration);
+                } catch(e) {} 
+            },
+            noise: (duration, vol=0.3) => {
+                if (isSfxMuted) return;
+                initAudio();
+                if(!audioCtx) return;
+                try {
+                    const bufferSize = audioCtx.sampleRate * duration;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                    const noiseSource = audioCtx.createBufferSource();
+                    noiseSource.buffer = buffer;
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass'; filter.frequency.value = 800;
+                    const gain = audioCtx.createGain();
+                    const targetVol = vol * sfxVolume;
+                    gain.gain.setValueAtTime(Math.max(targetVol, 0.0001), audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                    noiseSource.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+                    noiseSource.start();
+                } catch(e) {}
+            },
+            parkAppears: () => { 
+                if (isSfxMuted) return;
+                initAudio(); if(!audioCtx) return;
+                try {
+                    // Bird chirp 1: High pitch fast slide down
+                    let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(2500, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.2 * sfxVolume, audioCtx.currentTime + 0.02);
+                    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+
+                    // Bird chirp 2: Slightly higher, right after
+                    setTimeout(() => {
+                        if (isSfxMuted) return;
+                        if(!audioCtx) return;
+                        let osc2 = audioCtx.createOscillator(); let gain2 = audioCtx.createGain();
+                        osc2.type = 'sine'; osc2.frequency.setValueAtTime(2800, audioCtx.currentTime);
+                        osc2.frequency.exponentialRampToValueAtTime(1800, audioCtx.currentTime + 0.15);
+                        gain2.gain.setValueAtTime(0, audioCtx.currentTime);
+                        gain2.gain.linearRampToValueAtTime(0.2 * sfxVolume, audioCtx.currentTime + 0.02);
+                        gain2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
+                        osc2.connect(gain2); gain2.connect(audioCtx.destination);
+                        osc2.start(); osc2.stop(audioCtx.currentTime + 0.15);
+                    }, 120);
+                } catch(e) {}
+            },
+            parkMerge: () => { 
+                if (isSfxMuted) return;
+                initAudio(); if(!audioCtx) return;
+                try {
+                    // Triumphant swooping bird chirp
+                    let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(2000, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(3000, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.25 * sfxVolume, audioCtx.currentTime + 0.05);
+                    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+                } catch(e) {}
+            },
+            newBuilding: () => { 
+                if (isSfxMuted) return;
+                sfx.playTone(392, 'square', 0.15, 0.25); 
+                setTimeout(() => sfx.playTone(493, 'square', 0.15, 0.25), 120); 
+                setTimeout(() => sfx.playTone(587, 'square', 0.3, 0.3), 240); 
+            },
+            comboMerge: () => {
+                if (isSfxMuted) return;
+                sfx.playTone(523.25, 'square', 0.1, 0.15); 
+                setTimeout(() => sfx.playTone(659.25, 'square', 0.1, 0.15), 60); 
+                setTimeout(() => sfx.playTone(783.99, 'square', 0.1, 0.15), 120); 
+                setTimeout(() => sfx.playTone(1046.50, 'square', 0.3, 0.2), 180); 
+                setTimeout(() => sfx.playTone(2093.00, 'sine', 0.4, 0.1), 180);
+            },
+            serviceBuilt: () => { 
+                if (isSfxMuted) return;
+                sfx.playTone(261, 'square', 0.4, 0.3); sfx.playTone(392, 'square', 0.4, 0.3); 
+            },
+            crisis: () => {
+                if (isSfxMuted) return;
+                initAudio();
+                if(!audioCtx) return;
+                try {
+                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(600, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(1100, audioCtx.currentTime + 0.5); osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 1.0); osc.frequency.linearRampToValueAtTime(1100, audioCtx.currentTime + 1.5);
+                    const targetVol = 0.2 * sfxVolume; gain.gain.setValueAtTime(Math.max(targetVol, 0.0001), audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 1.5);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + 1.5);
+                } catch(e) {}
+            },
+            undo: () => { 
+                if (isSfxMuted) return;
+                sfx.playTone(800, 'sine', 0.25, 0.3, 200); 
+            },
+            demolish: () => { 
+                if (isSfxMuted) return;
+                sfx.noise(0.6, 0.8); sfx.playTone(100, 'square', 0.5, 0.6, 20); 
+            },
+            carHonk: () => { 
+                if (isSfxMuted) return;
+                initAudio(); if(!audioCtx) return;
+                try {
+                    const playHonk = (timeOffset) => {
+                        const freqs = [350, 415]; 
+                        freqs.forEach(f => {
+                            const osc = audioCtx.createOscillator();
+                            const gain = audioCtx.createGain();
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(f, audioCtx.currentTime + timeOffset);
+                            const targetVol = 0.15 * sfxVolume;
+                            gain.gain.setValueAtTime(0, audioCtx.currentTime + timeOffset);
+                            gain.gain.linearRampToValueAtTime(targetVol, audioCtx.currentTime + timeOffset + 0.02);
+                            gain.gain.setValueAtTime(targetVol, audioCtx.currentTime + timeOffset + 0.15);
+                            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + timeOffset + 0.2); 
+                            osc.connect(gain); gain.connect(audioCtx.destination);
+                            osc.start(audioCtx.currentTime + timeOffset); 
+                            osc.stop(audioCtx.currentTime + timeOffset + 0.2);
+                        });
+                    };
+                    playHonk(0);       
+                    playHonk(0.25);    
+                } catch(e) {}
+            },
+            newspaper: () => { 
+                if (isSfxMuted) return;
+                sfx.noise(0.1, 0.5); 
+                setTimeout(() => sfx.playTone(1000, 'square', 0.1, 0.2), 50); 
+                setTimeout(() => sfx.playTone(1500, 'sine', 0.4, 0.3), 100); 
+            }
+        };
+
+        // --- GLOBAL UI BINDINGS ---
+        window.doUndo = () => doUndo();
+        window.toggleDemolish = () => toggleDemolish();
+        window.restartGame = () => restartGame();
+        window.closeNewspaper = () => closeNewspaper();
+        window.openGuide = () => document.getElementById('guide-modal').classList.remove('hidden');
+        window.closeGuide = () => document.getElementById('guide-modal').classList.add('hidden');
+        window.openAudioSettings = () => document.getElementById('audio-modal').classList.remove('hidden');
+        window.closeAudioSettings = () => document.getElementById('audio-modal').classList.add('hidden');
+
+        // Checkbox Audio Toggles - Now explicitly pausing the track and totally muting
+        window.toggleMusic = (isChecked) => {
+            isMusicMuted = !isChecked; 
+            if (bgMusic) {
+                if (isMusicMuted) {
+                    bgMusic.pause();
+                } else {
+                    bgMusic.volume = MAX_MUSIC_REAL_VOLUME;
+                    bgMusic.play().catch(e => console.warn(e));
+                }
+            }
+        };
+
+        window.toggleSfx = (isChecked) => {
+            isSfxMuted = !isChecked; 
+            sfxVolume = isSfxMuted ? 0 : 1.0;
+        };
+
+        // Onboarding Start Click
+        window.dismissOnboarding = () => {
+            document.getElementById('onboarding-modal').classList.add('hidden');
+            initAudio(); 
+            spawnTile(); spawnTile(); spawnTile(); saveState(); 
+            showMessage("Secretária Sarah", "👩‍💼", "Vamos começar! Deslize em qualquer direção para fundir.", "border-blue-500");
+        };
+
+        // --- QUEUE SYSTEM FOR SEQUENCING EVENTS ---
+        let eventQueue = [];
+
+        function queueEvent(sfxFnName, msgData = null) {
+            eventQueue.push({ sfxFnName, msgData });
+        }
+
+        function processEventQueue() {
+            if (eventQueue.length > 0) {
+                const evt = eventQueue.shift();
+                if (evt.sfxFnName && typeof sfx[evt.sfxFnName] === 'function') sfx[evt.sfxFnName]();
+                if (evt.msgData) showMessage(evt.msgData.sender, evt.msgData.avatar, evt.msgData.text, evt.msgData.color);
+            }
+        }
+
+        // --- THREE.JS SETUP & VARIABLES ---
+        let scene, camera, renderer;
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const GRID_SIZE = 6;
+        const TILE_SIZE = 9.6;
+        const GAP = 2.4; 
+        const CELL_SIZE = TILE_SIZE + GAP; 
+        const BOARD_OFFSET = -((GRID_SIZE - 1) / 2) * CELL_SIZE; 
+        const BOARD_TOTAL_SIZE = GRID_SIZE * CELL_SIZE + CELL_SIZE; 
+        const genId = () => Math.random().toString(36).substr(2, 9);
+
+        function createEmptyGrid() { return Array.from({length: GRID_SIZE}, () => Array(GRID_SIZE).fill(null)); }
+        let grid = createEmptyGrid();
+        let foliageGrid = createEmptyGrid(); 
+        let tiles = [];
+        let cars = [];
+        let birds = []; // Global birds array
+        let particles = [];
+        
+        let population = 0, happiness = 0, funds = 50, week = 1, year = 1;
+        let lastYearPopulation = 0, lastYearHappiness = 0, specialsBuiltThisYear = [];
+        let availableSpecials = ['hospital', 'police', 'fire'];
+        let historyStack = [], gameState = 'IDLE', currentEvent = null, eventWeeksThisYear = [];
+        let pendingAnnualNewspaper = false, pendingLandmarkNewspaper = null, activeNewspaperType = null;
+        let hasFirstParkSpawned = false, hasFirstCarSpawned = false, movesWithoutMerge = 0, movesWithNegativeHappiness = 0, maxBuildingLevelReached = 2;
+        let hasSeenPark1Message = false, hasSeenPark2Message = false, hasSeenPark3Message = false, hasSeenSkyscraperMessage = false, hasSeenLowFundsMessage = false, movesSinceLastMessage = 0;
+
+        const ambientMessages = [
+            { sender: "Cidadão Carlos", avatar: "🏄‍♂️", text: "As vibrações nesta cidade estão impecáveis hoje!", color: "border-cyan-500" },
+            { sender: "Arquiteta Ana", avatar: "📐", text: "O alinhamento da grade é uma maravilha do planejamento urbano.", color: "border-indigo-500" },
+            { sender: "Cobrador Tiago", avatar: "💼", text: "Prédios de nível alto rendem mais impostos. Continue fundindo!", color: "border-emerald-500" },
+            { sender: "Passeador Daniel", avatar: "🐕", text: "Tanto espaço para passear com o cachorro! Quem é um bom garoto?", color: "border-amber-500" }
+        ];
+
+        function initThree() {
+            const container = document.getElementById('game-container');
+            scene = new THREE.Scene();
+            const aspect = window.innerWidth / window.innerHeight;
+            
+            let d;
+            if (aspect < 1) {
+                d = 42.5 / aspect; 
+                camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+                camera.position.set(0, 85, 75); camera.lookAt(0, 0, 0);
+            } else {
+                d = 48; 
+                camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+                camera.position.set(-20, 85, 75); camera.lookAt(-20, 0, 0);
+            }
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.85); scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xfff9e6, 0.9);
+            dirLight.position.set(40, 80, 20); dirLight.castShadow = true;
+            dirLight.shadow.camera.left = -60; dirLight.shadow.camera.right = 60;
+            dirLight.shadow.camera.top = 60; dirLight.shadow.camera.bottom = -60;
+            dirLight.shadow.mapSize.width = 2048; dirLight.shadow.mapSize.height = 2048;
+            scene.add(dirLight);
+
+            const ground = new THREE.Mesh(new THREE.BoxGeometry(BOARD_TOTAL_SIZE, 4, BOARD_TOTAL_SIZE).translate(0, -2, 0), new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 1.0 }));
+            ground.receiveShadow = true; scene.add(ground);
+
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x2b363c, roughness: 0.9 });
+            const lineMat = new THREE.MeshStandardMaterial({ color: 0xffca28, roughness: 0.8 }); 
+            const dirtMat = new THREE.MeshStandardMaterial({ color: 0x795548, roughness: 1.0 }); 
+
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 1.0 });
+            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x388e3c, roughness: 0.9 });
+            const bushMat = new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 0.9 });
+            
+            const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 1, 5); 
+            const leavesGeo = new THREE.ConeGeometry(1.2, 3, 5); 
+            const bushGeo = new THREE.DodecahedronGeometry(0.8);
+
+            for (let i = 0; i <= GRID_SIZE; i++) {
+                const pos = BOARD_OFFSET - (CELL_SIZE / 2) + i * CELL_SIZE;
+                const hRoad = new THREE.Mesh(new THREE.BoxGeometry(BOARD_TOTAL_SIZE, 0.1, GAP), roadMat); hRoad.position.set(0, 0.05, pos); hRoad.receiveShadow = true; scene.add(hRoad);
+                const vRoad = new THREE.Mesh(new THREE.BoxGeometry(GAP, 0.1, BOARD_TOTAL_SIZE), roadMat); vRoad.position.set(pos, 0.05, 0); vRoad.receiveShadow = true; scene.add(vRoad);
+                for (let j = -(BOARD_TOTAL_SIZE / 2); j <= (BOARD_TOTAL_SIZE / 2); j += 3) {
+                    if (Math.abs((j - BOARD_OFFSET + CELL_SIZE/2) % CELL_SIZE) < GAP) continue; 
+                    const hLine = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.11, 0.2), lineMat); hLine.position.set(j, 0.055, pos); scene.add(hLine);
+                    const vLine = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.11, 1.5), lineMat); vLine.position.set(pos, 0.055, j); scene.add(vLine);
+                }
+            }
+
+            for (let x = 0; x < GRID_SIZE; x++) {
+                for (let y = 0; y < GRID_SIZE; y++) {
+                    const plotX = BOARD_OFFSET + x * CELL_SIZE, plotZ = BOARD_OFFSET + y * CELL_SIZE;
+                    const dirt = new THREE.Mesh(new THREE.BoxGeometry(TILE_SIZE, 0.05, TILE_SIZE), dirtMat);
+                    dirt.position.set(plotX, 0.025, plotZ); dirt.receiveShadow = true; scene.add(dirt);
+                    const fol = new THREE.Group(); fol.position.set(plotX, 0.05, plotZ);
+                    
+                    if (Math.random() < 0.45) {
+                        const numItems = Math.floor(Math.random() * 3) + 1;
+                        for(let i=0; i<numItems; i++) {
+                            const isTree = Math.random() > 0.4;
+                            const ox = (Math.random() - 0.5) * (TILE_SIZE - 3); const oz = (Math.random() - 0.5) * (TILE_SIZE - 3);
+                            if (isTree) {
+                                const trunk = new THREE.Mesh(trunkGeo, trunkMat); trunk.position.set(ox, 0.5, oz); trunk.castShadow = true; fol.add(trunk);
+                                const leaves = new THREE.Mesh(leavesGeo, leavesMat); leaves.position.set(ox, 2.0, oz); leaves.castShadow = true; fol.add(leaves);
+                            } else {
+                                const bush = new THREE.Mesh(bushGeo, bushMat); const scale = 0.5 + Math.random() * 0.5;
+                                bush.scale.setScalar(scale); bush.position.set(ox, 0.4 * scale, oz); bush.castShadow = true; fol.add(bush);
+                            }
+                        }
+                    }
+                    scene.add(fol); foliageGrid[x][y] = fol;
+                }
+            }
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onWindowResize() {
+            const aspect = window.innerWidth / window.innerHeight;
+            let d;
+            if (aspect < 1) {
+                d = 42.5 / aspect; camera.position.set(0, 85, 75); camera.lookAt(0, 0, 0);
+            } else {
+                d = 48; camera.position.set(-20, 85, 75); camera.lookAt(-20, 0, 0);
+            }
+            camera.left = -d * aspect; camera.right = d * aspect; camera.top = d; camera.bottom = -d;
+            camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- DETAILED BUILDINGS ---
+        function createTileMesh(type, level, specialType, isDark = false) {
+            const group = new THREE.Group();
+            const getMat = (c, m=0.1, r=0.8, e=0x000000, eInt=0) => {
+                if(isDark) return new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9, metalness: 0.1 });
+                return new THREE.MeshStandardMaterial({ color: c, metalness: m, roughness: r, emissive: e, emissiveIntensity: eInt });
+            };
+            const addBox = (w, h, d, x, y, z, color, metalness=0.1, roughness=0.8) => {
+                const geo = new THREE.BoxGeometry(w, h, d); geo.translate(0, h/2, 0);
+                const mesh = new THREE.Mesh(geo, getMat(color, metalness, roughness));
+                mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh); return mesh;
+            };
+            const addDetail = (w, h, d, x, y, z, color, emissive=0x000000, eInt=0) => {
+                const geo = new THREE.BoxGeometry(w, h, d); geo.translate(0, h/2, 0);
+                const mesh = new THREE.Mesh(geo, getMat(color, 0.1, 0.8, emissive, eInt));
+                mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh); return mesh;
+            };
+            const addRoof = (radius, h, y, color) => {
+                const geo = new THREE.ConeGeometry(radius, h, 4); geo.translate(0, y + h/2, 0); geo.rotateY(Math.PI / 4); 
+                const mesh = new THREE.Mesh(geo, getMat(color, 0.1, 0.9)); mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh); return mesh;
+            };
+
+            const plotGeo = new THREE.BoxGeometry(TILE_SIZE, 0.2, TILE_SIZE); plotGeo.translate(0, 0.1, 0); 
+            let plotColor = 0xb0bec5; 
+            if (type === 'park' || (type === 'building' && level < 4)) plotColor = 0x8bc34a; 
+            if (type === 'special') plotColor = 0xcfd8dc; 
+            if (isDark) plotColor = 0x555555;
+            
+            const plot = new THREE.Mesh(plotGeo, new THREE.MeshStandardMaterial({ color: plotColor, roughness: 1.0 }));
+            plot.receiveShadow = true; group.add(plot);
+
+            if (type === 'building') {
+                switch(level) {
+                    case 1: addBox(4, 2.5, 4, 0, 0.2, 0, 0x8b5a2b); addBox(4.5, 0.4, 4.5, 0, 2.7, 0, 0x5c3a21); addDetail(1.2, 1.8, 0.2, 0, 0.2, 2.0, 0x3e2723); break;
+                    case 2: addBox(5, 3, 5, 0, 0.2, 0, 0xfff8e1); addRoof(4.2, 2.5, 3.2, 0xd32f2f); addDetail(1.2, 2.0, 0.2, 0, 0.2, 2.5, 0x5d4037); addDetail(1.0, 1.0, 0.2, -1.5, 1.2, 2.5, 0x81d4fa, 0x81d4fa, 0.2); addDetail(1.0, 1.0, 0.2, 1.5, 1.2, 2.5, 0x81d4fa, 0x81d4fa, 0.2); break;
+                    case 3: addBox(7, 3.5, 6, 0, 0.2, 0, 0xe0e0e0); addRoof(6.2, 3.5, 3.7, 0x455a64); addBox(1.5, 4, 1.5, 2, 0.2, -1.5, 0xbf360c); addDetail(1.2, 0.2, 1.2, 2, 4.2, -1.5, 0x212121); addDetail(1.5, 2.2, 0.2, 0, 0.2, 3.0, 0x4e342e); for(let wx of [-2, 2]) { addDetail(1.2, 1.2, 0.2, wx, 1.5, 3.0, 0xfff59d, 0xfff59d, 0.4); } break;
+                    case 4: addBox(7, 6, 7, 0, 0.2, 0, 0xa1887f); addBox(7.5, 0.6, 7.5, 0, 6.2, 0, 0x5d4037); addBox(6, 0.2, 6, 0, 6.8, 0, 0x333333); addDetail(2.5, 2.5, 0.2, 0, 0.2, 3.5, 0xeeeeee); addDetail(2.0, 2.0, 0.3, 0, 0.2, 3.5, 0x424242); for(let wx of [-1.8, 1.8]) { addDetail(1.5, 2.0, 0.2, wx, 3.5, 3.5, 0x81d4fa, 0x81d4fa, 0.3); addDetail(2.0, 0.2, 0.6, wx, 3.3, 3.6, 0x4e342e); } break;
+                    case 5: addBox(8, 3, 8, 0, 0.2, 0, 0x81d4fa, 0.6, 0.2); addBox(8.5, 0.6, 8.5, 0, 3.2, 0, 0xff7043); addBox(7.5, 6, 7.5, 0, 3.8, 0, 0xb0bec5); addBox(8, 0.4, 8, 0, 9.8, 0, 0x78909c); addDetail(2, 2.5, 0.2, 0, 0.2, 4.0, 0xeeeeee); addDetail(0.3, 3.0, 0.3, -3.8, 0.2, 3.8, 0xeeeeee); addDetail(0.3, 3.0, 0.3, 3.8, 0.2, 3.8, 0xeeeeee); addDetail(2, 1.5, 2, -2, 10.2, -2, 0x9e9e9e); break;
+                    case 6: addBox(6.5, 12, 6.5, 0, 0.2, 0, 0x4fc3f7, 0.7, 0.1); addBox(7, 0.5, 7, 0, 12.2, 0, 0x263238); addBox(2.5, 1.5, 2.5, 0, 12.7, 0, 0x9e9e9e); for(let y=2.2; y<12; y+=2.5) { addDetail(6.7, 0.8, 6.7, 0, y, 0, 0x212121); } break;
+                    case 7: addBox(7.5, 10, 7.5, 0, 0.2, 0, 0x795548); addBox(6, 8, 6, 0, 10.2, 0, 0x8d6e63); addBox(4.5, 5, 4.5, 0, 18.2, 0, 0xa1887f); addBox(0.4, 4, 0.4, 0, 23.2, 0, 0x424242); addDetail(3, 0.2, 3, -1.5, 10.2, 1.5, 0x333333); addDetail(2, 0.3, 2, -1.5, 10.2, 1.5, 0xe53935); addDetail(0.8, 8, 0.2, 0, 1.0, 3.8, 0xfff59d, 0xfff59d, 0.5); addDetail(0.8, 6, 0.2, 0, 11.0, 3.0, 0xfff59d, 0xfff59d, 0.5); break;
+                    case 8: const skyGeo = new THREE.CylinderGeometry(3.5, 3.5, 26, 8); skyGeo.translate(0, 13 + 0.2, 0); const skyMesh = new THREE.Mesh(skyGeo, getMat(0x1976d2, 0.8, 0.1)); skyMesh.castShadow = true; skyMesh.receiveShadow = true; group.add(skyMesh); addBox(8, 2, 8, 0, 0.2, 0, 0x263238); const spireGeo = new THREE.CylinderGeometry(0.1, 0.8, 8, 8); spireGeo.translate(0, 30 + 0.2, 0); const spireMesh = new THREE.Mesh(spireGeo, getMat(0xb0bec5, 0.9, 0.8)); group.add(spireMesh); for(let a=0; a<Math.PI*2; a+=Math.PI/2) { addDetail(0.6, 26, 0.6, Math.cos(a)*3.6, 2.2, Math.sin(a)*3.6, 0xeeeeee); } addDetail(0.4, 0.4, 0.4, 0, 38.2, 0, 0xff0000, 0xff0000, 1.5); break;
+                    case 9: const coreGeo = new THREE.CylinderGeometry(2, 2, 46, 16); coreGeo.translate(0, 23 + 0.2, 0); const core = new THREE.Mesh(coreGeo, getMat(0x00bcd4, 0.8, 0.1, 0x00838f, 0.8)); group.add(core); const addRotatedBlock = (w, h, y, rot) => { const geo = new THREE.BoxGeometry(w, h, w); geo.translate(0, h/2, 0); const mesh = new THREE.Mesh(geo, getMat(0xe0e0e0, 0.9, 0.2)); mesh.position.y = y; mesh.rotation.y = rot; mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh); }; addRotatedBlock(8, 8, 0.2, 0); addRotatedBlock(6.5, 10, 8.2, Math.PI / 12); addRotatedBlock(5, 12, 18.2, Math.PI / 6); addRotatedBlock(4, 16, 30.2, Math.PI / 4); break;
+                    case 10: addBox(9.4, 10, 9.4, 0, 0.2, 0, 0x212121); addBox(8, 12, 8, 0, 10.2, 0, 0x303030); addBox(6, 14, 6, 0, 22.2, 0, 0x424242); const glowMat = getMat(0xff3d00, 0.1, 0.8, 0xff3d00, 2); const trim1 = new THREE.Mesh(new THREE.BoxGeometry(9.6, 0.6, 9.6), glowMat); trim1.position.y = 10.2; group.add(trim1); const trim2 = new THREE.Mesh(new THREE.BoxGeometry(8.2, 0.6, 8.2), glowMat); trim2.position.y = 22.2; group.add(trim2); const trim3 = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.6, 6.2), glowMat); trim3.position.y = 36.2; group.add(trim3); for(let cx of [-4.2, 4.2]) { for(let cz of [-4.2, 4.2]) { addDetail(0.5, 12, 0.5, cx, 0.2, cz, 0x111111); addDetail(0.3, 10, 0.3, cx, 0.2, cz, 0xff3d00, 0xff3d00, 1.5); } } break;
+                    case 11: default: addBox(8.5, 3, 8.5, 0, 0.2, 0, 0xffffff, 0.1, 0.9); addBox(7, 2, 7, 0, 3.2, 0, 0xf5f5f5, 0.1, 0.9); const obGeo = new THREE.CylinderGeometry(1.5, 4, 32, 4); obGeo.translate(0, 16, 0); obGeo.rotateY(Math.PI / 4); const obMesh = new THREE.Mesh(obGeo, getMat(0xffffff, 0.4, 0.1)); obMesh.position.y = 5.2; obMesh.castShadow = true; group.add(obMesh); const orbGeo = new THREE.SphereGeometry(3.5, 32, 32); orbGeo.translate(0, 42, 0); const orbMesh = new THREE.Mesh(orbGeo, getMat(0xffca28, 1, 0, 0xffb300, 1.5)); group.add(orbMesh); for(let x of [-1, 1]) { for(let z of [-1, 1]) { const pGeo = new THREE.CylinderGeometry(0.3, 0.3, 6, 8); pGeo.translate(x * 3.5, 3 + 0.2, z * 3.5); const pMesh = new THREE.Mesh(pGeo, getMat(0xffffff)); pMesh.castShadow = true; group.add(pMesh); } } const orbitGroup = new THREE.Group(); orbitGroup.position.set(0, 42, 0); for(let i=0; i<3; i++) { const miniOrb = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), getMat(0xffffff, 0.1, 0.8, 0xffffff, 2)); miniOrb.position.set(Math.cos(i*Math.PI*2/3)*6, 0, Math.sin(i*Math.PI*2/3)*6); orbitGroup.add(miniOrb); } group.add(orbitGroup); group.userData.orbit = orbitGroup; break;
+                }
+            } 
+            else if (type === 'park') {
+                const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 1.5, 5); const leavesGeo = new THREE.ConeGeometry(1.8, 4, 5); 
+                const addTree = (x, z) => { const trunk = new THREE.Mesh(trunkGeo, getMat(0x5d4037)); trunk.position.set(x, 0.7, z); trunk.castShadow = true; group.add(trunk); const leaves = new THREE.Mesh(leavesGeo, getMat(0x388e3c)); leaves.position.set(x, 2.5, z); leaves.castShadow = true; group.add(leaves); };
+                if (level === 1) { addBox(4, 0.1, 8, 0, 0.2, 0, 0xd7ccc8); addBox(8, 0.1, 4, 0, 0.2, 0, 0xd7ccc8); addTree(-2.5, -2.5); addTree(2.5, 2.5); addBox(1.5, 0.5, 0.5, -2.5, 0.2, 2.5, 0x8b5a2b); } 
+                else if (level === 2) { addBox(7, 0.1, 7, 0, 0.2, 0, 0xe0e0e0); addTree(-3, -3); addTree(3, 3); addTree(-3, 3); addTree(3, -3); addBox(2.5, 0.3, 2.5, 0, 0.2, 0, 0x5d4037); addBox(2.0, 0.5, 2.0, 0, 0.3, 0, 0xe91e63); addBox(0.4, 2.0, 0.4, 0, 0.5, 0, 0xffffff); } 
+                else if (level >= 3) { addBox(8.5, 0.1, 8.5, 0, 0.2, 0, 0xeeeeee); addTree(-3.5, -3.5); addTree(3.5, 3.5); addTree(-3.5, 3.5); addTree(3.5, -3.5); addTree(0, -3.8); addTree(0, 3.8); addTree(-3.8, 0); addTree(3.8, 0); const fBase = new THREE.Mesh(new THREE.CylinderGeometry(3, 3.2, 0.6, 16), getMat(0x9e9e9e)); fBase.position.set(0, 0.5, 0); group.add(fBase); const wBase = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 2.8, 0.7, 16), new THREE.MeshStandardMaterial({color: isDark?0x222222:0x29b6f6, emissive: isDark?0:0x03a9f4, emissiveIntensity: 0.5, transparent: true, opacity: 0.8})); wBase.position.set(0, 0.5, 0); group.add(wBase); const fTier = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.7, 0.5, 16), getMat(0x9e9e9e)); fTier.position.set(0, 1.5, 0); group.add(fTier); const wTier = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.6, 16), new THREE.MeshStandardMaterial({color: isDark?0x222222:0x29b6f6, emissive: isDark?0:0x03a9f4, emissiveIntensity: 0.5, transparent: true, opacity: 0.8})); wTier.position.set(0, 1.5, 0); group.add(wTier); addBox(0.6, 3, 0.6, 0, 0.5, 0, 0xffffff); }
+            } 
+            else if (type === 'landmark') {
+                if (specialType === 'city_garden') {
+                    plot.material.color.setHex(isDark ? 0x555555 : 0xaed581); 
+                    
+                    // Improved base with green grass
+                    addBox(8.6, 0.4, 8.6, 0, 0.2, 0, 0x558b2f); 
+
+                    // Colorful tiny flowers
+                    const fColors = [0xe53935, 0xffeb3b, 0xe91e63, 0x03a9f4, 0xff9800];
+                    for(let i = 0; i < 20; i++) {
+                        const fx = (Math.random() - 0.5) * 7.5;
+                        const fz = (Math.random() - 0.5) * 7.5;
+                        if (Math.abs(fx) > 3.2 || Math.abs(fz) > 3.2) {
+                            addDetail(0.25, 0.25, 0.25, fx, 0.5, fz, fColors[Math.floor(Math.random() * fColors.length)]);
+                        }
+                    }
+
+                    const glassMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, metalness: 0.9, roughness: 0.05, side: THREE.DoubleSide });
+                    const ghGeo = new THREE.BoxGeometry(6, 4.5, 6); ghGeo.translate(0, 2.75, 0); const ghMesh = new THREE.Mesh(ghGeo, glassMat); group.add(ghMesh);
+                    const roofGeo = new THREE.CylinderGeometry(3, 3, 6, 16, 1, false, 0, Math.PI); roofGeo.rotateZ(Math.PI / 2); roofGeo.translate(0, 5.0, 0); const roofMesh = new THREE.Mesh(roofGeo, glassMat); group.add(roofMesh);
+                    const frameMat = getMat(0xffffff, 0.2, 0.8);
+                    const addFrameBox = (w, h, d, x, y, z) => { const f = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), frameMat); f.position.set(x, y, z); group.add(f); };
+                    addFrameBox(0.4, 4.7, 0.4, 3, 2.75, 3); addFrameBox(0.4, 4.7, 0.4, -3, 2.75, 3); addFrameBox(0.4, 4.7, 0.4, 3, 2.75, -3); addFrameBox(0.4, 4.7, 0.4, -3, 2.75, -3); addFrameBox(0.4, 4.7, 0.4, 0, 2.75, 3); addFrameBox(0.4, 4.7, 0.4, 0, 2.75, -3); addFrameBox(6.4, 0.4, 6.4, 0, 5.0, 0);
+                    const iTrunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 2.5), getMat(0x5d4037)); iTrunk.position.set(0, 1.5, 0); group.add(iTrunk); const iLeaves = new THREE.Mesh(new THREE.ConeGeometry(2, 4.5, 6), getMat(0x388e3c)); iLeaves.position.set(0, 3.5, 0); group.add(iLeaves);
+                    const iTrunk2 = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 2), getMat(0x4e342e)); iTrunk2.position.set(-1.5, 1.5, -1.5); group.add(iTrunk2); const iLeaves2 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2), getMat(0x4caf50)); iLeaves2.position.set(-1.5, 2.5, -1.5); group.add(iLeaves2);
+                } else if (specialType === 'planetarium') {
+                    plot.material.color.setHex(isDark ? 0x555555 : 0x90a4ae);
+                    const pBase = new THREE.Mesh(new THREE.CylinderGeometry(3.8, 3.8, 2, 16), getMat(0x263238)); pBase.position.set(0, 1.2, 0); pBase.castShadow = true; group.add(pBase);
+                    const pDome = new THREE.Mesh(new THREE.SphereGeometry(3.6, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2), getMat(0xeeeeee, 0.3, 0.2)); pDome.position.set(0, 2.2, 0); pDome.castShadow = true; group.add(pDome);
+                    const ringGeo = new THREE.TorusGeometry(5, 0.15, 8, 32); const ring = new THREE.Mesh(ringGeo, getMat(0xffb300, 0.8, 0.1)); ring.position.set(0, 3, 0); ring.rotation.x = Math.PI / 3; ring.rotation.y = Math.PI / 6; ring.castShadow = true; group.add(ring);
+                    addBox(2.5, 1.5, 2.5, 0, 0.2, 3.5, 0x455a64);
+
+                    // Add long telescope pointing up
+                    const teleGroup = new THREE.Group();
+                    const teleTube = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 4.5, 16), getMat(0xeceff1, 0.8, 0.2));
+                    teleTube.position.set(0, 2.25, 0);
+                    teleGroup.add(teleTube);
+                    const teleLens = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.5, 16), getMat(0x111111, 0.9, 0.1));
+                    teleLens.position.set(0, 4.6, 0);
+                    teleGroup.add(teleLens);
+                    teleGroup.rotation.x = -Math.PI / 3.5;
+                    teleGroup.rotation.y = Math.PI / 4;
+                    teleGroup.position.set(0, 2.2, 0); 
+                    teleGroup.castShadow = true;
+                    group.add(teleGroup);
+                } else if (specialType === 'zoo') {
+                    plot.material.color.setHex(isDark ? 0x555555 : 0x8bc34a);
+                    addBox(1.6, 0.1, 8.5, 0, 0.25, 0, 0xcddc39); addBox(3, 0.1, 2, -2, 0.25, -2, 0x29b6f6); addBox(2, 0.1, 3, 2, 0.25, 2, 0x29b6f6); 
+                    const fenceMat = getMat(0x5d4037);
+                    const makeFence = (x, z, w, d) => { const f1 = new THREE.Mesh(new THREE.BoxGeometry(w, 0.6, 0.1), fenceMat); f1.position.set(x, 0.5, z - d/2); f1.castShadow=true; group.add(f1); const f2 = new THREE.Mesh(new THREE.BoxGeometry(w, 0.6, 0.1), fenceMat); f2.position.set(x, 0.5, z + d/2); f2.castShadow=true; group.add(f2); const f3 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.6, d), fenceMat); f3.position.set(x - w/2, 0.5, z); f3.castShadow=true; group.add(f3); const f4 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.6, d), fenceMat); f4.position.set(x + w/2, 0.5, z); f4.castShadow=true; group.add(f4); };
+                    makeFence(-2.5, -2.5, 3.5, 2.5); makeFence(2.5, 2.5, 2.5, 3.5); 
+                    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.6), getMat(0x9e9e9e)); rock.position.set(-2, 0.5, -2); rock.castShadow=true; group.add(rock);
+                    const bTrunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 2), getMat(0x4e342e)); bTrunk.position.set(2, 1.2, -2); bTrunk.castShadow=true; group.add(bTrunk); const bLeaves = new THREE.Mesh(new THREE.DodecahedronGeometry(1.5), getMat(0x2e7d32)); bLeaves.position.set(2, 2.5, -2); bLeaves.castShadow=true; group.add(bLeaves);
+                    
+                    // NOVA: Árvore de Acácia para a Girafa
+                    const acTrunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 3.5), getMat(0x5d4037)); acTrunk.position.set(-3.2, 1.75, -2.0); acTrunk.castShadow=true; group.add(acTrunk);
+                    const acLeaves = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.8, 0.8, 7), getMat(0x388e3c)); acLeaves.position.set(-3.2, 3.5, -2.0); acLeaves.castShadow=true; group.add(acLeaves);
+
+                    addBox(0.4, 2, 0.4, -1, 0.2, 4.2, 0x795548); addBox(0.4, 2, 0.4, 1, 0.2, 4.2, 0x795548); addBox(2.4, 0.6, 0.4, 0, 2, 4.2, 0xffca28); 
+
+                    // Add Girafa (Muito mais alta e comendo da árvore)
+                    addBox(0.6, 0.5, 1.0, -2.0, 1.2, -1.0, 0xffb300); // corpo
+                    addBox(0.2, 2.0, 0.2, -2.0, 1.7, -0.6, 0xffb300); // pescoço
+                    addBox(0.3, 0.3, 0.5, -2.0, 3.6, -0.5, 0xffb300); // cabeça
+                    addBox(0.15, 1.2, 0.15, -2.2, 0.2, -0.7, 0xffb300); // perna Frente Esq
+                    addBox(0.15, 1.2, 0.15, -1.8, 0.2, -0.7, 0xffb300); // perna Frente Dir
+                    addBox(0.15, 1.2, 0.15, -2.2, 0.2, -1.3, 0xffb300); // perna Tras Esq
+                    addBox(0.15, 1.2, 0.15, -1.8, 0.2, -1.3, 0xffb300); // perna Tras Dir
+                    
+                    // Add Elephant
+                    addBox(1.2, 0.9, 1.6, 1.5, 0.6, 1.0, 0x757575); // body
+                    addBox(0.8, 0.8, 0.8, 1.5, 0.8, 1.9, 0x757575); // head
+                    addBox(0.3, 0.9, 0.3, 1.5, 0.2, 2.3, 0x757575); // trunk
+                    addBox(1.8, 0.6, 0.1, 1.5, 1.0, 1.8, 0x757575); // ears
+                    addBox(0.3, 0.6, 0.3, 1.2, 0.2, 1.5, 0x757575); // leg FL
+                    addBox(0.3, 0.6, 0.3, 1.8, 0.2, 1.5, 0x757575); // leg FR
+                    addBox(0.3, 0.6, 0.3, 1.2, 0.2, 0.5, 0x757575); // leg BL
+                    addBox(0.3, 0.6, 0.3, 1.8, 0.2, 0.5, 0x757575); // leg BR
+                }
+            }
+            else if (type === 'special') {
+                if (specialType === 'hospital') { addBox(8, 3, 8, 0, 0.2, 0, 0xffffff); addBox(6, 6, 6, 0, 3.2, 0, 0xffffff); addDetail(3, 1, 0.3, 0, 6.2, 3.1, 0xe53935); addDetail(1, 3, 0.3, 0, 6.2, 3.1, 0xe53935); addBox(4, 0.2, 4, 0, 9.2, 0, 0x424242); addDetail(2, 0.3, 2, 0, 9.2, 0, 0xffffff); } 
+                else if (specialType === 'police') { addBox(9, 4, 7, 0, 0.2, 0, 0x1565c0); addBox(5, 8, 5, 0, 4.2, 0, 0x37474f); addBox(6, 0.5, 6, 0, 12.2, 0, 0x263238); addDetail(0.8, 0.5, 0.8, -1.5, 12.7, 0, 0xff0000, 0xff0000, 1); addDetail(0.8, 0.5, 0.8, 1.5, 12.7, 0, 0x0000ff, 0x0000ff, 1); addDetail(3, 2.5, 0.3, 0, 0.2, 3.6, 0xeeeeee); } 
+                else if (specialType === 'fire') { addBox(8, 5, 6, -1, 0.2, 0, 0xc62828); addBox(2.5, 12, 2.5, 3.5, 0.2, 0, 0xb71c1c); addBox(3, 0.5, 3, 3.5, 12.2, 0, 0x424242); addDetail(2.5, 3.5, 0.2, -3, 0.2, 3.1, 0x757575); addDetail(2.5, 3.5, 0.2, 0, 0.2, 3.1, 0x757575); }
+            }
+            return group;
+        }
+
+        function createCarMesh() {
+            const group = new THREE.Group();
+            const color = [0xe53935, 0x43a047, 0x1e88e5, 0xfdd835, 0x8e24aa, 0x00acc1, 0xffffff][Math.floor(Math.random()*7)];
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.45, 0.75).translate(0, 0.35, 0), new THREE.MeshStandardMaterial({color: color, roughness: 0.4})); body.castShadow = true; group.add(body);
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.35, 0.65).translate(-0.15, 0.7, 0), new THREE.MeshStandardMaterial({color: 0xeeeeee, roughness: 0.1})); cabin.castShadow = true; group.add(cabin);
+            const wGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.8, 8); wGeo.rotateX(Math.PI / 2);
+            const wMat = new THREE.MeshStandardMaterial({color: 0x111111});
+            const wf = new THREE.Mesh(wGeo, wMat); wf.position.set(0.4, 0.18, 0); group.add(wf);
+            const wb = new THREE.Mesh(wGeo, wMat); wb.position.set(-0.4, 0.18, 0); group.add(wb);
+            return group;
+        }
+
+        function createBirdMesh() {
+            const colors = [0xe53935, 0x1e88e5, 0xfdd835]; // Red, Blue, Yellow
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({color: color, roughness: 0.7});
+            const beakMat = new THREE.MeshStandardMaterial({color: 0xffa000}); // Orange/Yellow beak
+
+            // Body
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.8), mat);
+            body.castShadow = true; group.add(body);
+
+            // Head
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), mat);
+            head.position.set(0, 0.2, 0.5); head.castShadow = true; group.add(head);
+
+            // Beak
+            const beak = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.3, 4), beakMat);
+            beak.rotation.x = Math.PI / 2; beak.position.set(0, 0.2, 0.8); group.add(beak);
+
+            // Wings (pivoted near the body)
+            const wingGeo = new THREE.BoxGeometry(0.8, 0.05, 0.5);
+            wingGeo.translate(0.4, 0, 0);
+            
+            const leftWing = new THREE.Mesh(wingGeo, mat);
+            leftWing.position.set(0.3, 0.1, 0); leftWing.castShadow = true; group.add(leftWing);
+
+            const rightWing = new THREE.Mesh(wingGeo, mat);
+            rightWing.position.set(-0.3, 0.1, 0); rightWing.rotation.y = Math.PI; rightWing.castShadow = true; group.add(rightWing);
+
+            // Tail
+            const tail = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.6), mat);
+            tail.position.set(0, 0.1, -0.6); tail.rotation.x = -Math.PI / 6; group.add(tail);
+
+            group.userData = { leftWing, rightWing, flapSpeed: 15 + Math.random() * 10 };
+            group.scale.setScalar(0.8); // Make it tiny
+            return group;
+        }
+
+        function spawnBird(tileX, tileY) {
+            const mesh = createBirdMesh();
+            const bx = BOARD_OFFSET + tileX * CELL_SIZE;
+            const bz = BOARD_OFFSET + tileY * CELL_SIZE;
+            const y = 15 + Math.random() * 10; // High above the city
+            mesh.position.set(bx, y, bz);
+            scene.add(mesh);
+            
+            birds.push({
+                mesh: mesh, x: bx, y: y, z: bz, baseY: y,
+                angle: Math.random() * Math.PI * 2,
+                turnSpeed: (Math.random() - 0.5) * 0.03,
+                speed: 0.15 + Math.random() * 0.1
+            });
+
+            // Prevent infinite birds
+            if (birds.length > 15) {
+                let oldBird = birds.shift();
+                scene.remove(oldBird.mesh);
+            }
+        }
+
+        function createDemolitionEffect(x, z) {
+            const particleCount = 25; const geo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+            for (let i = 0; i < particleCount; i++) {
+                const pColor = [0x795548, 0x9e9e9e, 0x6d4c41, 0xeeeeee][Math.floor(Math.random() * 4)];
+                const mat = new THREE.MeshStandardMaterial({ color: pColor, roughness: 1.0 });
+                const p = new THREE.Mesh(geo, mat); p.position.set(x + (Math.random()-0.5)*4, 1 + Math.random()*3, z + (Math.random()-0.5)*4); p.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI); p.castShadow = true; scene.add(p);
+                particles.push({ mesh: p, vx: (Math.random()-0.5)*1.2, vy: Math.random()*1.0 + 0.3, vz: (Math.random()-0.5)*1.2, rx: (Math.random()-0.5)*0.2, ry: (Math.random()-0.5)*0.2, rz: (Math.random()-0.5)*0.2, life: 1.0 });
+            }
+        }
+
+        // --- GAME LOGIC ---
+        function generateEventWeeks() {
+            eventWeeksThisYear = []; const numEvents = Math.floor(Math.random() * 3) + 1; 
+            while(eventWeeksThisYear.length < numEvents) { let rWeek = Math.floor(Math.random() * 40) + 5; if (!eventWeeksThisYear.includes(rWeek)) eventWeeksThisYear.push(rWeek); }
+        }
+
+        function initGame() {
+            generateEventWeeks();
+        }
+
+        function restartGame() {
+            tiles.forEach(t => scene.remove(t.mesh)); tiles = []; cars.forEach(c => scene.remove(c.mesh)); cars = []; particles.forEach(p => scene.remove(p.mesh)); particles = [];
+            birds.forEach(b => scene.remove(b.mesh)); birds = []; 
+            grid = createEmptyGrid(); population = 0; happiness = 0; funds = 50; week = 1; year = 1;
+            lastYearPopulation = 0; lastYearHappiness = 0; specialsBuiltThisYear = []; availableSpecials = ['hospital', 'police', 'fire'];
+            historyStack = []; currentEvent = null; eventWeeksThisYear = [];
+            pendingAnnualNewspaper = false; pendingLandmarkNewspaper = null; activeNewspaperType = null;
+            hasFirstParkSpawned = false; hasFirstCarSpawned = false; movesWithoutMerge = 0; movesWithNegativeHappiness = 0; maxBuildingLevelReached = 2; movesSinceLastMessage = 0;
+            hasSeenPark1Message = false; hasSeenPark2Message = false; hasSeenPark3Message = false; hasSeenSkyscraperMessage = false; hasSeenLowFundsMessage = false;
+            
+            eventQueue = []; // Clear the event queue on restart
+            
+            updatePopulation(0); updateHappiness(0); updateFundsUI();
+            document.getElementById('date').innerText = `Ano 1, Sem 1`;
+            document.getElementById('msg-box').classList.remove('ring-4', 'ring-red-500', 'animate-pulse');
+            document.getElementById('btn-restart').classList.add('hidden');
+            document.getElementById('name-modal').classList.add('hidden');
+            
+            gameState = 'IDLE'; showMessage("Secretária Sarah", "👩‍💼", "Um novo começo! Vamos construir uma nova cidade gloriosa.", "border-blue-500");
+            generateEventWeeks(); spawnTile(); spawnTile(); spawnTile(); saveState();
+        }
+
+        function spawnCar(tileX, tileY) {
+            const carMesh = createCarMesh(); const bx = BOARD_OFFSET + tileX * CELL_SIZE; const bz = BOARD_OFFSET + tileY * CELL_SIZE; const hc = CELL_SIZE / 2;
+            const opts = [ {rx: bx-hc, rz: bz, dx: 0, dz: 1}, {rx: bx+hc, rz: bz, dx: 0, dz: -1}, {rx: bx, rz: bz-hc, dx: 1, dz: 0}, {rx: bx, rz: bz+hc, dx: -1, dz: 0} ];
+            const r = opts[Math.floor(Math.random()*opts.length)]; let sx = r.rx; let sz = r.rz;
+            if(r.dx !== 0){ sz += r.dx > 0 ? 0.6 : -0.6; carMesh.rotation.y = r.dx > 0 ? 0 : Math.PI; } else { sx += r.dz > 0 ? -0.6 : 0.6; carMesh.rotation.y = r.dz > 0 ? -Math.PI/2 : Math.PI/2; }
+            carMesh.position.set(sx, 0.05, sz); scene.add(carMesh); cars.push({ mesh: carMesh, x: sx, z: sz, dx: r.dx, dz: r.dz, speed: 0.08 + Math.random()*0.06 });
+            
+            // Queue Honk every single time a car spawns!
+            let msg = null;
+            if (!hasFirstCarSpawned) {
+                hasFirstCarSpawned = true;
+                msg = {sender: "Motorista Carlos", avatar: "🚗", text: "Um prédio nível 4 traz trânsito! Os carros estão nas ruas.", color: "border-gray-500"};
+            }
+            queueEvent('carHonk', msg);
+        }
+
+        function showMessage(sender, avatar, text, borderColorClass = "border-blue-500") {
+            const box = document.getElementById('msg-box'); movesSinceLastMessage = 0; 
+            box.style.opacity = '0'; box.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                document.getElementById('msg-sender').innerText = sender; document.getElementById('msg-avatar').innerText = avatar; document.getElementById('msg-text').innerText = text;
+                box.className = box.className.replace(/border-\w+-\d+/g, '') + " border-l-4 " + borderColorClass;
+                box.style.opacity = '1'; box.style.transform = 'translateY(0)';
+            }, 150); 
+        }
+
+        function spawnTile(forcedType = null, forcedLevel = null, isDark = false) {
+            const spots = getEmptySpots(); if (!spots.length) return;
+            const spot = spots[Math.floor(Math.random() * spots.length)];
+            const tile = { id: genId(), x: spot.x, y: spot.y, type: forcedType || 'building', level: forcedLevel || (Math.random() < 0.9 ? 1 : 2), specialType: null, isDark, scale: 0.01, targetGrid: {x: spot.x, y: spot.y}, mergedInto: null, merged: false };
+            tile.mesh = createTileMesh(tile.type, tile.level, tile.specialType, tile.isDark);
+            tile.mesh.position.set(BOARD_OFFSET + spot.x * CELL_SIZE, 0, BOARD_OFFSET + spot.y * CELL_SIZE);
+            tile.mesh.userData.tileObj = tile; scene.add(tile.mesh); grid[spot.x][spot.y] = tile; tiles.push(tile);
+            updateFoliageVisibility();
+        }
+
+        function move(dir, targetCol = null, targetRow = null) {
+            saveState(); let moved = false;
+            let xL = Array.from({length:6}, (_,i)=>i), yL = Array.from({length:6}, (_,i)=>i);
+            if (dir.x === 1) xL.reverse(); if (dir.y === 1) yL.reverse();
+            
+            if (currentEvent) { 
+                if (targetCol === null || targetRow === null || targetCol < 0 || targetCol >= GRID_SIZE || targetRow < 0 || targetRow >= GRID_SIZE) { 
+                    historyStack.pop(); return; 
+                }
+                if (dir.x !== 0) yL = [targetRow]; else xL = [targetCol]; 
+            }
+            
+            for (let x of xL) {
+                for (let y of yL) {
+                    let t = grid[x][y]; if (!t) continue; let nx = x, ny = y;
+                    while (true) {
+                        let mx = nx + dir.x, my = ny + dir.y; if (mx < 0 || mx >= 6 || my < 0 || my >= 6) break;
+                        let nt = grid[mx][my]; if (!nt) { nx = mx; ny = my; }
+                        else if (!currentEvent && !nt.merged && !t.isDark && !nt.isDark && t.type === nt.type && t.level === nt.level && t.type !== 'special' && t.type !== 'landmark') { nx = mx; ny = my; t.mergedInto = nt; nt.merged = true; break; }
+                        else break;
+                    }
+                    if (nx !== x || ny !== y) { grid[x][y] = null; if (!t.mergedInto) grid[nx][ny] = t; t.targetGrid = {x: nx, y: ny}; moved = true; }
+                }
+            }
+            if (moved) gameState = 'ANIMATING'; else historyStack.pop();
+        }
+
+        function isEventSolvable(specialTile, targetTile, maxDepth) {
+            let initialState = new Uint8Array(36);
+            for(let i=0; i<tiles.length; i++) {
+                let t = tiles[i]; let val = 1; if (t.id === specialTile.id) val = 2; else if (t.id === targetTile.id) val = 3;
+                initialState[t.targetGrid.y * 6 + t.targetGrid.x] = val;
+            }
+            const checkSuccess = (state) => {
+                let sIdx = -1, tIdx = -1; for (let i = 0; i < 36; i++) { if (state[i] === 2) sIdx = i; else if (state[i] === 3) tIdx = i; }
+                if (sIdx === -1 || tIdx === -1) return false; return Math.abs((sIdx % 6) - (tIdx % 6)) + Math.abs(Math.floor(sIdx / 6) - Math.floor(tIdx / 6)) === 1;
+            };
+            if (checkSuccess(initialState)) return true;
+            let queue = [initialState], depthQueue = [0], visited = new Set(); visited.add(String.fromCharCode.apply(null, initialState));
+            let head = 0, MAX_STATES = 15000; 
+
+            while(head < queue.length) {
+                if (head > MAX_STATES) return false; 
+                let state = queue[head]; let depth = depthQueue[head]; head++;
+                if (depth >= maxDepth) continue;
+                for (let type = 0; type < 4; type++) {
+                    for (let index = 0; index < 6; index++) {
+                        let changed = false; let newState = new Uint8Array(state);
+                        if (type === 0) { let writeIdx = 0; for (let c = 0; c < 6; c++) { let val = state[index * 6 + c]; if (val !== 0) { if (writeIdx !== c) { newState[index * 6 + writeIdx] = val; newState[index * 6 + c] = 0; changed = true; } writeIdx++; } } } 
+                        else if (type === 1) { let writeIdx = 5; for (let c = 5; c >= 0; c--) { let val = state[index * 6 + c]; if (val !== 0) { if (writeIdx !== c) { newState[index * 6 + writeIdx] = val; newState[index * 6 + c] = 0; changed = true; } writeIdx--; } } } 
+                        else if (type === 2) { let writeIdx = 0; for (let r = 0; r < 6; r++) { let val = state[r * 6 + index]; if (val !== 0) { if (writeIdx !== r) { newState[writeIdx * 6 + index] = val; newState[r * 6 + index] = 0; changed = true; } writeIdx++; } } } 
+                        else if (type === 3) { let writeIdx = 5; for (let r = 5; r >= 0; r--) { let val = state[r * 6 + index]; if (val !== 0) { if (writeIdx !== r) { newState[writeIdx * 6 + index] = val; newState[r * 6 + index] = 0; changed = true; } writeIdx--; } } }
+                        if (changed) { if (checkSuccess(newState)) return true; let hash = String.fromCharCode.apply(null, newState); if (!visited.has(hash)) { visited.add(hash); queue.push(newState); depthQueue.push(depth + 1); } }
+                    }
+                }
+            } return false;
+        }
+
+        function startEvent() {
+            const builtSpecials = ['hospital', 'police', 'fire'].filter(s => !availableSpecials.includes(s)); if (builtSpecials.length === 0) return; 
+            for (let i = builtSpecials.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [builtSpecials[i], builtSpecials[j]] = [builtSpecials[j], builtSpecials[i]]; }
+            let type = null, target = null;
+            for (const t of builtSpecials) {
+                const specialTile = tiles.find(tile => tile.type === 'special' && tile.specialType === t); if (!specialTile) continue;
+                let possibleTargets = tiles.filter(tile => {
+                    if (tile.type !== 'building' || tile.isDark) return false; if ((t === 'fire' || t === 'police') && (tile.level < 2 || tile.level > 5)) return false;
+                    const isAdjacent = Math.abs(tile.targetGrid.x - specialTile.targetGrid.x) + Math.abs(tile.targetGrid.y - specialTile.targetGrid.y) === 1;
+                    if (isAdjacent || !isEventSolvable(specialTile, tile, 6)) return false; return true;
+                });
+                if (possibleTargets.length > 0) { type = t; target = possibleTargets[Math.floor(Math.random() * possibleTargets.length)]; break; }
+            }
+            if (!target) return; 
+
+            const indicatorGroup = new THREE.Group(); indicatorGroup.position.y = 0; 
+            
+            let beamColor = type === 'fire' ? 0xff3d00 : (type === 'police' ? 0x0088ff : 0x00ff00);
+            const beamGeo = new THREE.CylinderGeometry(1.5, 1.5, 60, 8); beamGeo.translate(0, 30, 0);
+            const beamMat = new THREE.MeshBasicMaterial({ color: beamColor, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false });
+            const beam = new THREE.Mesh(beamGeo, beamMat);
+            indicatorGroup.add(beam); 
+            indicatorGroup.userData.beam = beam;
+
+            const iconGroup = new THREE.Group(); iconGroup.position.y = 15;
+            indicatorGroup.add(iconGroup); 
+            indicatorGroup.userData.iconGroup = iconGroup;
+
+            if (type === 'fire') {
+                const fire1 = new THREE.Mesh(new THREE.ConeGeometry(2.5, 5, 5), new THREE.MeshStandardMaterial({color: 0xff3d00, emissive: 0xff0000, emissiveIntensity: 2, transparent: true, opacity: 0.9})); iconGroup.add(fire1);
+                const light = new THREE.PointLight(0xff3d00, 3, 40); iconGroup.add(light); 
+                indicatorGroup.userData.isFire = true; indicatorGroup.userData.light = light; indicatorGroup.userData.icon = fire1;
+            } else if (type === 'police') {
+                const bulb = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), new THREE.MeshStandardMaterial({color: 0xffffff, emissive: 0x0000ff, emissiveIntensity: 2})); iconGroup.add(bulb);
+                const light = new THREE.PointLight(0x0000ff, 3, 40); iconGroup.add(light); 
+                indicatorGroup.userData.isPolice = true; indicatorGroup.userData.bulb = bulb; indicatorGroup.userData.light = light;
+            } else {
+                const crossMat = new THREE.MeshStandardMaterial({color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 2}); const vBar = new THREE.Mesh(new THREE.BoxGeometry(1.5, 4.5, 1.5), crossMat); const hBar = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.5, 1.5), crossMat);
+                iconGroup.add(vBar, hBar); 
+                indicatorGroup.userData.isMedical = true;
+            }
+
+            target.mesh.add(indicatorGroup); currentEvent = { type: type, targetTile: target, targetTileId: target.id, movesLeft: 7, indicator: indicatorGroup }; updateEventUI(); updateToolsUI(); 
+            
+            sfx.crisis(); 
+        }
+
+        function updateEventUI() {
+            if (!currentEvent) return;
+            if (currentEvent.type === 'fire') showMessage("Chefe dos Bombeiros Fábio", "👨‍🚒", `🔥 INCÊNDIO! Deslize LINHA ou COLUNA para mover o Corpo de Bombeiros até ele! (${currentEvent.movesLeft} restam)`, "border-red-500");
+            else if (currentEvent.type === 'police') showMessage("Oficial Olivia", "👮‍♀️", `🚨 Assalto! Deslize LINHA ou COLUNA para mover a Delegacia até lá! (${currentEvent.movesLeft} restam)`, "border-blue-500");
+            else if (currentEvent.type === 'hospital') showMessage("Dra. Daisy", "👩‍⚕️", `🚑 Emergência! Deslize LINHA ou COLUNA para mover o Hospital até lá! (${currentEvent.movesLeft} restam)`, "border-emerald-500");
+        }
+
+        function processEventTurn() {
+            if (!currentEvent) return null; currentEvent.movesLeft--; updateEventUI();
+            const specialTile = tiles.find(t => t.type === 'special' && t.specialType === currentEvent.type); const targetTile = currentEvent.targetTile;
+            let isAdjacent = specialTile && targetTile ? Math.abs(specialTile.targetGrid.x - targetTile.targetGrid.x) + Math.abs(specialTile.targetGrid.y - targetTile.targetGrid.y) === 1 : false;
+            
+            if (isAdjacent) { if(targetTile && targetTile.mesh) targetTile.mesh.remove(currentEvent.indicator); return 'SUCCESS'; } 
+            else if (currentEvent.movesLeft <= 0) {
+                if(targetTile && targetTile.mesh) targetTile.mesh.remove(currentEvent.indicator);
+                if (currentEvent.type === 'fire' || currentEvent.type === 'police') {
+                    if(targetTile) {
+                        targetTile.isDark = true; const x = targetTile.mesh.position.x; const z = targetTile.mesh.position.z;
+                        scene.remove(targetTile.mesh); targetTile.mesh = createTileMesh(targetTile.type, targetTile.level, targetTile.specialType, true);
+                        targetTile.mesh.position.set(x, 0, z); targetTile.mesh.userData.tileObj = targetTile; scene.add(targetTile.mesh);
+                    }
+                } return 'FAIL';
+            } return null; 
+        }
+
+        function showLandmarkNewspaper(landmarkType) {
+            sfx.newspaper(); 
+            gameState = 'PAUSED_NEWSPAPER'; activeNewspaperType = 'LANDMARK'; let headline = "", body = "";
+            if (landmarkType === 'city_garden') { headline = "MARAVILHA BOTÂNICA INAUGURADA!"; body = "Cidadãos correm para o novo Jardim da Cidade. Plantas exóticas e passarelas tranquilas oferecem uma fuga necessária da vida urbana."; } 
+            else if (landmarkType === 'planetarium') { headline = "ALCANÇANDO AS ESTRELAS!"; body = "Um Planetário de última geração foi construído! Entusiastas da ciência e famílias estão entusiasmados em explorar o cosmos."; } 
+            else if (landmarkType === 'zoo') { headline = "LEÕES, TIGRES E URSOS!"; body = "O tão aguardado Zoológico da Cidade finalmente abriu suas portas. Ambientalistas e visitantes elogiam os recintos naturais."; }
+            document.getElementById('news-date').innerText = `Ano ${year}, Sem ${week}`; document.getElementById('news-edition').innerText = "EDIÇÃO CULTURAL"; document.getElementById('news-edition').className = "text-purple-700 font-black tracking-widest";
+            document.getElementById('news-headline').innerText = headline; document.getElementById('news-body').innerText = body;
+            document.getElementById('news-pop').innerText = `+0`; document.getElementById('news-hap').innerText = `+100`; document.getElementById('news-tax').innerText = `+$0`; document.getElementById('news-upkeep').innerText = `-$15`;
+            document.getElementById('news-btn').innerText = "Continuar Jogando"; document.getElementById('newspaper-modal').classList.remove('hidden');
+        }
+
+        function showEventNewspaper(isSuccess, eventType) {
+            sfx.newspaper(); 
+            gameState = 'PAUSED_NEWSPAPER'; activeNewspaperType = 'EVENT'; let headline = "", body = "", pDelta = 0, hDelta = 0;
+            if (isSuccess) {
+                hDelta = 40;
+                if (eventType === 'fire') { headline = "DESASTRE EVITADO!"; body = "Bravos bombeiros chegaram a tempo de parar um grande incêndio. O prédio e seus moradores estão a salvo."; } 
+                else if (eventType === 'police') { headline = "REFÉNS RESGATADOS!"; body = "A polícia neutralizou a ameaça rapidamente. Os cidadãos aplaudem a resposta rápida da nossa delegacia local."; } 
+                else if (eventType === 'hospital') { headline = "RECUPERAÇÃO MILAGROSA!"; body = "Paramédicos chegaram rapidamente, salvando várias vidas. A infraestrutura médica da cidade provou seu valor."; }
+            } else {
+                if (eventType === 'fire') { hDelta = -60; headline = "QUARTEIRÃO EM CINZAS!"; body = "Os bombeiros chegaram tarde demais! O prédio queimou completamente, deixando uma ruína em nossa bela cidade."; } 
+                else if (eventType === 'police') { hDelta = -60; headline = "ASSALTO BEM-SUCEDIDO!"; body = "Os criminosos fugiram! O prédio alvo foi abandonado devido ao crime desenfreado, tornando-se uma mancha escura na paisagem."; } 
+                else if (eventType === 'hospital') { pDelta = -50; hDelta = -60; headline = "TRAGÉDIA MÉDICA!"; body = "As ambulâncias ficaram presas no trânsito! Perdas trágicas hoje, pois a emergência médica não foi atendida a tempo. Os cidadãos estão furiosos."; }
+            }
+            updatePopulation(pDelta); updateHappiness(hDelta);
+            document.getElementById('news-date').innerText = `Ano ${year}, Sem ${week}`; document.getElementById('news-edition').innerText = "EDIÇÃO ESPECIAL"; document.getElementById('news-edition').className = "text-red-700 font-black tracking-widest";
+            document.getElementById('news-headline').innerText = headline; document.getElementById('news-body').innerText = body;
+            document.getElementById('news-pop').innerText = pDelta >= 0 ? `+${pDelta}` : pDelta; document.getElementById('news-hap').innerText = hDelta >= 0 ? `+${hDelta}` : hDelta;
+            document.getElementById('news-tax').innerText = `+$0`; document.getElementById('news-upkeep').innerText = `-$0`;
+            document.getElementById('news-btn').innerText = "Continuar Jogando"; document.getElementById('newspaper-modal').classList.remove('hidden');
+        }
+
+        function showNewspaper(pastYear) {
+            sfx.newspaper(); 
+            gameState = 'PAUSED_NEWSPAPER'; activeNewspaperType = 'ANNUAL';
+            const popGrowth = population - lastYearPopulation, hapGrowth = happiness - lastYearHappiness;
+            let taxRevenue = 0, cityUpkeep = 0;
+            for(let x=0; x<GRID_SIZE; x++) for(let y=0; y<GRID_SIZE; y++) {
+                const t = grid[x][y]; if(!t) continue;
+                if(t.type === 'building' && !t.isDark) taxRevenue += t.level;
+                else if(t.type === 'park') cityUpkeep += (t.level === 1 ? 2 : (t.level === 2 ? 3 : 6));
+                else if(t.type === 'special') cityUpkeep += 8; else if(t.type === 'landmark') cityUpkeep += 15;
+            }
+            funds += (taxRevenue - cityUpkeep); updateFundsUI();
+            
+            let headline = "", body = ""; 
+            const getRandomStory = (stories) => stories[Math.floor(Math.random() * stories.length)];
+            const darkCount = tiles.filter(t => t.isDark).length;
+
+            if (funds < 0) { 
+                const s = getRandomStory([
+                    { h: "CIDADE À BEIRA DA FALÊNCIA!", b: "Os gastos extravagantes do Prefeito esvaziaram os cofres da cidade! Estamos operando com uma dívida enorme." },
+                    { h: "ORÇAMENTO MUNICIPAL EM RUÍNAS!", b: "Contadores entram em pânico com o déficit da cidade. Demolir prédios antigos pode ser necessário para não afundar." },
+                    { h: "CRISE DE DÉFICIT ATINGE CIDADÓPOLIS!", b: "Cidadãos preocupados com a falta de verba. 'Precisamos de mais arranha-céus pagando impostos', diz economista." }
+                ]); 
+                headline = s.h; body = s.b; 
+            } 
+            else if (darkCount >= 3) {
+                 const s = getRandomStory([
+                    { h: "DECADÊNCIA URBANA AMEAÇA A CIDADE!", b: "Prédios abandonados viraram um problema visual grave. Valores imobiliários caem com o avanço da degradação urbana." },
+                    { h: "CIDADE FANTASMA OU METRÓPOLE?", b: "O aumento de estruturas abandonadas faz os cidadãos exigirem um projeto de renovação e demolição imediatamente." }
+                ]);
+                headline = s.h; body = s.b;
+            }
+            else if (specialsBuiltThisYear.length === 3) { 
+                const s = getRandomStory([
+                    { h: "UMA ERA DE OURO DE OBRAS PÚBLICAS!", b: "Em um feito histórico, o Prefeito inaugurou um Hospital, uma Delegacia e um Corpo de Bombeiros em um único ano!" },
+                    { h: "PREFEITO ENTREGA O TRIO DE OURO!", b: "Os serviços de emergência foram atualizados. Segurança e saúde estão no seu ponto mais alto." },
+                    { h: "A CIDADE DO AMANHÃ, HOJE!", b: "Um boom de infraestrutura sem precedentes revolucionou nossos serviços em tempo recorde." }
+                ]);
+                headline = s.h; body = s.b; 
+            } 
+            else if (specialsBuiltThisYear.length >= 1) { 
+                let specName = specialsBuiltThisYear[0].toUpperCase();
+                if (specName === 'POLICE') specName = 'POLÍCIA';
+                if (specName === 'FIRE') specName = 'BOMBEIROS';
+                const s = getRandomStory([
+                    { h: `NOVO POLO DE ${specName} INAUGURADO!`, b: "Cidadãos celebram o salto nos serviços públicos. 'Sinto-me muito mais seguro com isso por perto', diz um residente." },
+                    { h: `${specName} EXPANDE OS SERVIÇOS DA CIDADE!`, b: "A nova instalação já faz a diferença. 'Finalmente, nosso dinheiro de impostos bem gasto!', diz um empresário." },
+                    { h: "MARCO DE INFRAESTRUTURA ALCANÇADO!", b: `A faixa inaugural do novo prédio de ${specName} foi cortada hoje, prometendo melhor cobertura para os bairros próximos.` }
+                ]);
+                headline = s.h; body = s.b; 
+            } 
+            else if (popGrowth >= 120) { 
+                const s = getRandomStory([
+                    { h: "EXPLOSÃO POPULACIONAL!", b: "Os imóveis estão nas alturas com o número recorde de novos moradores na cidade. O prefeito corre para atender à demanda por moradia." },
+                    { h: "MEGACIDADE CIDADÓPOLIS IMINENTE?", b: "O tráfego aumentou, mas a energia também! Pessoas estão se mudando aos montes em busca do sonho urbano." },
+                    { h: "MERCADO IMOBILIÁRIO AQUECIDO!", b: "Não há nenhum apartamento vazio na cidade. A rápida expansão está atraindo pessoas de todo o mundo." }
+                ]);
+                headline = s.h; body = s.b; 
+            } 
+            else if (hapGrowth >= 60) { 
+                const s = getRandomStory([
+                    { h: "CIDADE NOMEADA 'O LUGAR MAIS FELIZ PARA VIVER'!", b: "Graças ao foco do prefeito em parques e serviços, o moral dos cidadãos atingiu um nível altíssimo." },
+                    { h: "O MORAL ATINGE NOVOS PICOS!", b: "Rostos sorridentes estão por toda parte em Cidadópolis! Os recentes desenvolvimentos melhoraram drasticamente a qualidade de vida." },
+                    { h: "UTOPIA ALCANÇADA?", b: "Com a satisfação dos cidadãos batendo recordes, as cities vizinhas olham para Cidadópolis com pura inveja." }
+                ]);
+                headline = s.h; body = s.b; 
+            } 
+            else if (funds > 300) {
+                const s = getRandomStory([
+                    { h: "TESOURO TRANSBORDANDO!", b: "Os cofres da cidade estão cheios de dinheiro. Os cidadãos perguntam quando o próximo megaprojeto começará." },
+                    { h: "BOOM ECONÔMICO TRAZ RIQUEZA", b: "As receitas fiscais estão nas alturas. Cidadópolis é oficialmente a cidade mais rica de toda a região!" }
+                ]);
+                headline = s.h; body = s.b;
+            }
+            else if (popGrowth < 10 && hapGrowth < 10) { 
+                const s = getRandomStory([
+                    { h: "UM ANO TRANQUILO PARA A CIDADE", b: "Pouco mudou este ano. Analistas se perguntam se o Prefeito planeja um grande desenvolvimento ou se está apenas dormindo no serviço." },
+                    { h: "ESTAGNAÇÃO OU ESTABILIDADE?", b: "Críticos apontam a falta de novos desenvolvimentos, enquanto apoiadores elogiam o ano tranquilo, pacífico e sem interrupções." },
+                    { h: "PREFEITO DE FÉRIAS?", b: "Cidadãos se perguntam quem está realmente administrando a cidade, já que as novas construções praticamente pararam." }
+                ]);
+                headline = s.h; body = s.b; 
+            } 
+            else { 
+                const s = getRandomStory([
+                    { h: "UM ANO DE PLANEJAMENTO CONSTANTE", b: `O Prefeito conclui o Ano ${pastYear} com expansão contínua. Os cidadãos aguardam mais desenvolvimento no próximo mandato.` },
+                    { h: "DEVAGAR E SEMPRE VENCE A CORRIDA", b: "Cidadópolis continua seu crescimento confiável. Os investidores estão satisfeitos com os retornos seguros e previsíveis dos imóveis." },
+                    { h: "MAIS UM ANO SÓLIDO REGISTRADO", b: `Com o fim do Ano ${pastYear}, os moradores estão perfeitamente satisfeitos e ansiosos pelo que o Prefeito planejou a seguir.` }
+                ]);
+                headline = s.h; body = s.b; 
+            }
+
+            document.getElementById('news-date').innerText = `Fim do Ano ${pastYear}`; document.getElementById('news-edition').innerText = "Edição Anual"; document.getElementById('news-edition').className = "text-slate-700 tracking-widest";
+            document.getElementById('news-headline').innerText = headline; document.getElementById('news-body').innerText = body;
+            document.getElementById('news-pop').innerText = popGrowth >= 0 ? `+${popGrowth}` : popGrowth; document.getElementById('news-hap').innerText = hapGrowth >= 0 ? `+${hapGrowth}` : hapGrowth;
+            document.getElementById('news-tax').innerText = `+$${taxRevenue}`; document.getElementById('news-upkeep').innerText = `-$${cityUpkeep}`;
+            document.getElementById('news-btn').innerText = "Começar Novo Ano"; document.getElementById('newspaper-modal').classList.remove('hidden');
+        }
+
+        function closeNewspaper() {
+            document.getElementById('newspaper-modal').classList.add('hidden');
+            if (activeNewspaperType === 'ANNUAL') { year++; updateFundsUI(); document.getElementById('date').innerText = `Ano ${year}, Sem ${week}`; lastYearPopulation = population; lastYearHappiness = happiness; specialsBuiltThisYear = []; generateEventWeeks(); }
+            if (pendingLandmarkNewspaper) { let lm = pendingLandmarkNewspaper; pendingLandmarkNewspaper = null; showLandmarkNewspaper(lm); return; }
+            if (pendingAnnualNewspaper) { pendingAnnualNewspaper = false; showNewspaper(year); return;  }
+            gameState = 'IDLE'; showMessage("Secretária Sarah", "👩‍💼", "Vamos voltar a expandir nossa bela cidade!", "border-blue-500"); checkGameOver(); 
+        }
+
+        // --- CORE ANIMATION & GAME LOOP ---
+        function finalizeAnimations() {
+            let parksToSpawn = 0; let reachedLevel11 = false; let mergesThisTurn = 0;
+            
+            for (let i = tiles.length - 1; i >= 0; i--) {
+                let tile = tiles[i];
+                if (tile.mergedInto) { 
+                    scene.remove(tile.mesh); 
+                    tiles.splice(i, 1); 
+                } else {
+                    if (tile.merged) {
+                        mergesThisTurn++;
+                        if (tile.type === 'building') {
+                            tile.level++; updatePopulation(Math.pow(2, tile.level));
+                            
+                            // Milestone: Max Building Reached
+                            if (tile.level > maxBuildingLevelReached) { 
+                                maxBuildingLevelReached = tile.level; 
+                                updateHappiness(10); 
+                                queueEvent('newBuilding', {sender: "Arquiteta Ana", avatar: "📐", text: `Uma nova maravilha arquitetônica! Chegamos ao nível ${tile.level}! (+10 Felicidade)`, color: "border-indigo-500"});
+                            }
+                            
+                            if (tile.level === 11) reachedLevel11 = true;
+                            
+                            // Milestone: Car Spawns
+                            if (tile.level === 4) {
+                                spawnCar(tile.targetGrid.x, tile.targetGrid.y);
+                            }
+                            
+                            if (tile.level === 5) parksToSpawn++;
+                            
+                            // Milestone: Skyscraper (Level 6)
+                            if (tile.level === 6 && !hasSeenSkyscraperMessage) { 
+                                hasSeenSkyscraperMessage = true; 
+                                queueEvent(null, {sender: "Arquiteta Ana", avatar: "🏢", text: "Incrível! Nosso primeiro arranha-céu médio. O horizonte está mudando!", color: "border-indigo-500"}); 
+                            }
+                        } else if (tile.type === 'park') {
+                            if (tile.level === 1) { 
+                                tile.level = 2; updateHappiness(20); 
+                                spawnBird(tile.targetGrid.x, tile.targetGrid.y); // Spawn a bird!
+                                let msg = null;
+                                if (!hasSeenPark2Message) { hasSeenPark2Message = true; msg = {sender: "Guarda-parques Pedro", avatar: "🌳", text: "Os cidadãos estão felizes com as reformas que expandiram o parque para um parque médio!", color: "border-green-500"}; }
+                                queueEvent('parkMerge', msg);
+                            } 
+                            else if (tile.level === 2) {
+                                if (availableSpecials.length > 0) {
+                                    const chosenSpecial = availableSpecials.splice(Math.floor(Math.random() * availableSpecials.length), 1)[0];
+                                    tile.type = 'special'; tile.specialType = chosenSpecial; specialsBuiltThisYear.push(chosenSpecial); updateHappiness(50);
+                                    let msg = null;
+                                    if (chosenSpecial === 'hospital') msg = {sender: "Dra. Daisy", avatar: "👩‍⚕️", text: "O novo Hospital está totalmente operacional.", color: "border-emerald-500"};
+                                    else if (chosenSpecial === 'police') msg = {sender: "Oficial Olivia", avatar: "👮‍♀️", text: "Delegacia segura. As taxas de criminalidade estão caindo.", color: "border-blue-500"};
+                                    else if (chosenSpecial === 'fire') msg = {sender: "Chefe dos Bombeiros Fábio", avatar: "👨‍🚒", text: "O Corpo de Bombeiros está na ativa.", color: "border-red-500"};
+                                    queueEvent('serviceBuilt', msg);
+                                } else { 
+                                    tile.level = 3; updateHappiness(40);
+                                    let msg = null;
+                                    if (!hasSeenPark3Message) { hasSeenPark3Message = true; msg = {sender: "Guarda-parques Pedro", avatar: "🌳", text: "Os cidadãos de Cidadópolis estão muito felizes com o parque gigante!", color: "border-green-500"}; }
+                                    queueEvent('parkMerge', msg);
+                                }
+                            }
+                            else if (tile.level === 3) {
+                                const landmarks = ['city_garden', 'planetarium', 'zoo']; const chosen = landmarks[Math.floor(Math.random() * landmarks.length)];
+                                tile.type = 'landmark'; tile.specialType = chosen; updateHappiness(50);
+                                let msg = null;
+                                if (chosen === 'city_garden') msg = {sender: "Botânica Beatriz", avatar: "🌸", text: "O novo Jardim da Cidade está florescendo lindamente! Um verdadeiro oásis.", color: "border-pink-500"};
+                                else if (chosen === 'planetarium') msg = {sender: "Astrônomo Alex", avatar: "🔭", text: "O Planetário está aberto! As estrelas parecem mais próximas do que nunca.", color: "border-purple-500"};
+                                else if (chosen === 'zoo') msg = {sender: "Zelador Zeca", avatar: "🦁", text: "O Zoológico da Cidade é um sucesso!", color: "border-amber-500"};
+                                queueEvent('serviceBuilt', msg);
+                                pendingLandmarkNewspaper = chosen;
+                            }
+                        }
+                        scene.remove(tile.mesh); tile.mesh = createTileMesh(tile.type, tile.level, tile.specialType, tile.isDark);
+                        tile.scale = 1.6; tile.mesh.scale.setScalar(tile.scale); scene.add(tile.mesh); tile.merged = false; tile.mesh.userData.tileObj = tile; 
+                    }
+                    tile.x = tile.targetGrid.x; tile.y = tile.targetGrid.y; tile.mesh.position.x = BOARD_OFFSET + tile.x * CELL_SIZE; tile.mesh.position.z = BOARD_OFFSET + tile.y * CELL_SIZE; 
+                }
+            }
+
+            grid = createEmptyGrid(); tiles.forEach(t => { grid[t.x][t.y] = t; });
+            
+            // Economy Checks
+            if (funds < 20 && !hasSeenLowFundsMessage) { 
+                hasSeenLowFundsMessage = true; 
+                queueEvent(null, {sender: "Cobrador Tiago", avatar: "💼", text: "Prefeito, nossos fundos estão acabando! Prédios de nível mais alto vão gerar mais impostos.", color: "border-orange-500"}); 
+            } else if (funds > 100) hasSeenLowFundsMessage = false; 
+
+            let eventResult = null; let eventActiveThisTurn = !!currentEvent;
+            if (currentEvent) eventResult = processEventTurn();
+
+            if (!eventActiveThisTurn) {
+                for (let p = 0; p < parksToSpawn; p++) { 
+                    spawnTile('park', 1); 
+                    let msg = null;
+                    if (!hasFirstParkSpawned) { 
+                        updateHappiness(10); hasFirstParkSpawned = true; 
+                        if (!hasSeenPark1Message) { hasSeenPark1Message = true; msg = {sender: "Guarda-parques Pedro", avatar: "🌳", text: "Um novo pequeno parque brotou! Parques só se fundem com outros parques.", color: "border-green-500"}; }
+                    }
+                    queueEvent('parkAppears', msg);
+                }
+                spawnTile(); 
+            }
+            updateFoliageVisibility(); 
+
+            // Morale Checks
+            if (!eventActiveThisTurn) {
+                let darkCount = tiles.filter(t => t.isDark).length;
+                if (darkCount > 0) { 
+                    updateHappiness(-5 * darkCount); 
+                    if (Math.random() < 0.25) queueEvent(null, {sender: "Repórter Rita", avatar: "🎤", text: `Prédios abandonados diminuem o humor da cidade (-${5 * darkCount} Felicidade).`, color: "border-pink-500"}); 
+                }
+                
+                if (mergesThisTurn > 0) { 
+                    movesWithoutMerge = 0; 
+                } else { 
+                    movesWithoutMerge++; 
+                    if (movesWithoutMerge >= 3) { 
+                        updateHappiness(-10); 
+                        queueEvent(null, {sender: "Cidadão Carlos", avatar: "🏄‍♂️", text: "Que tédio! A cidade parou de evoluir! As pessoas estão infelizes (-10 Felicidade).", color: "border-cyan-500"}); 
+                    } 
+                }
+
+                // COMBO MERGE MILESTONE
+                if (mergesThisTurn > 2) { 
+                    updateHappiness(20); 
+                    queueEvent('comboMerge', {sender: "Repórter Rita", avatar: "🎤", text: "Desenvolvimento rápido! Três ou mais construções fundidas de uma vez! (+20 Felicidade).", color: "border-emerald-500"}); 
+                }
+            }
+            
+            // Severe Negative Morale Checks
+            if (happiness < 0 && !eventActiveThisTurn) {
+                movesWithNegativeHappiness++;
+                if (movesWithNegativeHappiness >= 3) {
+                    movesWithNegativeHappiness = 0; let highestBuilding = null; let maxLevel = -1;
+                    for(let i=0; i<tiles.length; i++) { const t = tiles[i]; if (t.type === 'building' && !t.isDark && t.level > maxLevel) { highestBuilding = t; maxLevel = t.level; } }
+                    if (highestBuilding) {
+                        const oldPop = Math.pow(2, highestBuilding.level); highestBuilding.level--; const newPop = highestBuilding.level > 0 ? Math.pow(2, highestBuilding.level) : 0; updatePopulation(-(oldPop - newPop));
+                        createDemolitionEffect(highestBuilding.mesh.position.x, highestBuilding.mesh.position.z); scene.remove(highestBuilding.mesh);
+                        if (highestBuilding.level === 0) { 
+                            grid[highestBuilding.x][highestBuilding.y] = null; tiles = tiles.filter(t => t !== highestBuilding); 
+                            queueEvent('demolish', {sender: "Arquiteta Ana", avatar: "🏢", text: "Prefeito! A infelicidade está destruindo a cidade! Um prédio desabou!", color: "border-red-600"}); 
+                        } else { 
+                            highestBuilding.mesh = createTileMesh(highestBuilding.type, highestBuilding.level, highestBuilding.specialType, highestBuilding.isDark); highestBuilding.mesh.position.x = BOARD_OFFSET + highestBuilding.x * CELL_SIZE; highestBuilding.mesh.position.z = BOARD_OFFSET + highestBuilding.y * CELL_SIZE; highestBuilding.scale = 1; highestBuilding.mesh.scale.setScalar(1); scene.add(highestBuilding.mesh); highestBuilding.mesh.userData.tileObj = highestBuilding; 
+                            queueEvent('demolish', {sender: "Arquiteta Ana", avatar: "🏢", text: "Prefeito! A felicidade negativa fez nosso prédio mais alto perder o nível!", color: "border-red-600"}); 
+                        }
+                        updateFoliageVisibility();
+                    }
+                } else if (movesWithNegativeHappiness === 1) { 
+                    queueEvent(null, {sender: "Arquiteta Ana", avatar: "🏢", text: "Prefeito! Os cidadãos estão furiosos! Se a felicidade continuar negativa, um prédio vai desabar logo!", color: "border-red-600"}); 
+                }
+            } else movesWithNegativeHappiness = 0; 
+
+            // Ambient Messages
+            if (eventQueue.length === 0 && !currentEvent && gameState === 'IDLE' && !eventResult && !reachedLevel11) {
+                movesSinceLastMessage++;
+                if (movesSinceLastMessage > 12 && Math.random() < 0.3) { 
+                    const randomMsg = ambientMessages[Math.floor(Math.random() * ambientMessages.length)]; 
+                    queueEvent(null, randomMsg); 
+                }
+            }
+
+            week++; if (week > 52) { week = 1; pendingAnnualNewspaper = true; }
+            const hasSpecials = ['hospital', 'police', 'fire'].some(s => !availableSpecials.includes(s));
+            if (!currentEvent && hasSpecials && eventWeeksThisYear.includes(week) && !eventResult && !reachedLevel11) startEvent();
+
+            if (reachedLevel11) {
+                gameState = 'GAME_OVER'; triggerGameOver("win"); showMessage("Secretária Sarah", "👩‍💼", "Incrível, Prefeito! Construímos a Megaestrutura de Nível 11! Você completou Cidadópolis!", "border-yellow-400"); pendingAnnualNewspaper = false; pendingLandmarkNewspaper = null; eventQueue = []; return; 
+            }
+
+            // Process exactly one queued event this turn, provided a newspaper isn't about to pop up and pause everything
+            let showingNewspaper = eventResult || pendingLandmarkNewspaper || pendingAnnualNewspaper;
+            if (!showingNewspaper) {
+                processEventQueue();
+            }
+
+            if (eventResult) { showEventNewspaper(eventResult === 'SUCCESS', currentEvent.type); currentEvent = null; updateToolsUI(); } 
+            else if (pendingLandmarkNewspaper) { let lm = pendingLandmarkNewspaper; pendingLandmarkNewspaper = null; showLandmarkNewspaper(lm); } 
+            else if (pendingAnnualNewspaper) { pendingAnnualNewspaper = false; showNewspaper(year); } 
+            else { gameState = 'IDLE'; document.getElementById('date').innerText = `Ano ${year}, Sem ${week}`; checkGameOver(); }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            let done = true;
+            tiles.forEach(t => {
+                const tx = BOARD_OFFSET + t.targetGrid.x * CELL_SIZE, tz = BOARD_OFFSET + t.targetGrid.y * CELL_SIZE;
+                t.mesh.position.x += (tx - t.mesh.position.x) * 0.3; t.mesh.position.z += (tz - t.mesh.position.z) * 0.3;
+                if (Math.abs(tx - t.mesh.position.x) + Math.abs(tz - t.mesh.position.z) > 0.05) done = false;
+                if (t.type === 'building' && t.level >= 11 && t.mesh.userData.orbit && !t.isDark) { t.mesh.children[2].rotation.y += 0.02; t.mesh.userData.orbit.rotation.y -= 0.04; }
+                t.scale += (1.0 - t.scale) * 0.2; t.mesh.scale.setScalar(t.scale);
+            });
+            for(let i=particles.length-1; i>=0; i--) {
+                let p = particles[i]; p.mesh.position.x += p.vx; p.mesh.position.y += p.vy; p.mesh.position.z += p.vz;
+                p.mesh.rotation.x += p.rx; p.mesh.rotation.y += p.ry; p.mesh.rotation.z += p.rz; p.vy -= 0.06; p.life -= 0.02; p.mesh.scale.setScalar(p.life);
+                if (p.life <= 0 || p.mesh.position.y < -2) { scene.remove(p.mesh); particles.splice(i, 1); }
+            }
+            if (currentEvent && currentEvent.indicator) {
+                const ind = currentEvent.indicator; const time = Date.now() * 0.005;
+                
+                if (ind.userData.beam) ind.userData.beam.material.opacity = 0.3 + Math.sin(time * 4) * 0.15; 
+                
+                const iGrp = ind.userData.iconGroup;
+                if (iGrp) iGrp.position.y = 15 + Math.sin(time) * 1.5; 
+
+                if (ind.userData.isFire) { 
+                    ind.userData.icon.rotation.y += 0.1; ind.userData.icon.scale.setScalar(1 + Math.sin(time*2)*0.1); 
+                    ind.userData.light.intensity = 3 + Math.sin(time*3); 
+                } 
+                else if (ind.userData.isPolice) { 
+                    iGrp.rotation.y += 0.2; const colorHex = Math.sin(time*1.5) > 0 ? 0x0000ff : 0xff0000; 
+                    ind.userData.bulb.material.color.setHex(colorHex); ind.userData.bulb.material.emissive.setHex(colorHex); 
+                    ind.userData.light.color.setHex(colorHex); 
+                } 
+                else if (ind.userData.isMedical) { 
+                    iGrp.rotation.y += 0.05; iGrp.scale.setScalar(1 + Math.sin(time * 3) * 0.2); 
+                }
+            }
+
+            const l = BOARD_TOTAL_SIZE / 2; 
+            
+            // Cars
+            cars.forEach(c => { c.x += c.dx * c.speed; c.z += c.dz * c.speed; if(c.x > l) c.x = -l; if(c.x < -l) c.x = l; if(c.z > l) c.z = -l; if(c.z < -l) c.z = l; c.mesh.position.set(c.x, 0.05, c.z); });
+            
+            // Birds
+            const bTime = Date.now() * 0.001;
+            birds.forEach(b => {
+                b.angle += b.turnSpeed;
+                b.x += Math.sin(b.angle) * b.speed;
+                b.z += Math.cos(b.angle) * b.speed;
+                b.y = b.baseY + Math.sin(bTime * 2 + b.angle) * 2; // Gentle bobbing
+                
+                // Wrap around map boundary (a bit wider than cars so they fly further out)
+                const bBorder = l + 10;
+                if (b.x > bBorder) b.x = -bBorder; if (b.x < -bBorder) b.x = bBorder;
+                if (b.z > bBorder) b.z = -bBorder; if (b.z < -bBorder) b.z = bBorder;
+                
+                b.mesh.position.set(b.x, b.y, b.z);
+                b.mesh.rotation.y = b.angle;
+                
+                // Flap wings
+                const flap = Math.sin(bTime * b.mesh.userData.flapSpeed) * 0.5;
+                b.mesh.userData.leftWing.rotation.z = flap;
+                b.mesh.userData.rightWing.rotation.z = flap; 
+            });
+
+            if (gameState === 'ANIMATING' && done) finalizeAnimations();
+            renderer.render(scene, camera);
+        }
+
+        // --- GENERAL UTILS ---
+        function updatePopulation(add=0) { population += add; if(population<0) population=0; document.getElementById('population').innerText = population; }
+        function updateHappiness(add=0) { happiness += add; document.getElementById('happiness').innerText = happiness; }
+        function updateFundsUI() { const fEl = document.getElementById('funds'); fEl.innerText = `$${funds}`; if (funds < 0) { fEl.classList.replace('text-yellow-700', 'text-red-600'); } else { fEl.classList.replace('text-red-600', 'text-yellow-700'); } updateToolsUI(); }
+        function updateToolsUI() {
+            const btnU = document.getElementById('btn-undo'), btnD = document.getElementById('btn-demolish');
+            if (funds < 25 || historyStack.length === 0) { btnU.style.opacity = '0.5'; btnU.style.pointerEvents = 'none'; } else { btnU.style.opacity = '1'; btnU.style.pointerEvents = 'auto'; }
+            if (funds < 50) { btnD.style.opacity = '0.5'; btnD.style.pointerEvents = 'none'; if(gameState === 'DEMOLISH_MODE') toggleDemolish(); } else { btnD.style.opacity = '1'; btnD.style.pointerEvents = 'auto'; }
+        }
+        function saveState() { historyStack.push({population, happiness, funds, week, year, lastYearPopulation, lastYearHappiness, availableSpecials: [...availableSpecials], specialsBuiltThisYear: [...specialsBuiltThisYear], eventWeeksThisYear: [...eventWeeksThisYear], hasFirstParkSpawned, hasFirstCarSpawned, movesWithoutMerge, movesWithNegativeHappiness, maxBuildingLevelReached, currentEventState: currentEvent ? { type: currentEvent.type, targetTileId: currentEvent.targetTileId, movesLeft: currentEvent.movesLeft } : null, gridData: tiles.map(t => ({id: t.id, x: t.x, y: t.y, type: t.type, level: t.level, specialType: t.specialType, isDark: t.isDark})) }); if (historyStack.length > 20) historyStack.shift(); updateToolsUI(); }
+        
+        function doUndo() {
+            if (funds < 25 || historyStack.length === 0 || gameState !== 'IDLE') return;
+            sfx.undo(); 
+            eventQueue = []; // Clear queue on time travel so past events don't falsely play
+            const state = historyStack.pop();
+            population = state.population; happiness = state.happiness; funds = state.funds - 25; week = state.week; year = state.year;
+            lastYearPopulation = state.lastYearPopulation; lastYearHappiness = state.lastYearHappiness; availableSpecials = [...state.availableSpecials]; specialsBuiltThisYear = [...state.specialsBuiltThisYear]; eventWeeksThisYear = [...state.eventWeeksThisYear];
+            hasFirstParkSpawned = state.hasFirstParkSpawned; hasFirstCarSpawned = state.hasFirstCarSpawned; movesWithoutMerge = state.movesWithoutMerge; movesWithNegativeHappiness = state.movesWithNegativeHappiness; maxBuildingLevelReached = state.maxBuildingLevelReached;
+            if(currentEvent && currentEvent.targetTile && currentEvent.targetTile.mesh) currentEvent.targetTile.mesh.remove(currentEvent.indicator);
+            if (state.currentEventState) { if (currentEvent) currentEvent.movesLeft = state.currentEventState.movesLeft; } else if (currentEvent) currentEvent = null; 
+            tiles.forEach(t => scene.remove(t.mesh)); tiles = []; grid = createEmptyGrid();
+            state.gridData.forEach(data => {
+                const mesh = createTileMesh(data.type, data.level, data.specialType, data.isDark); mesh.position.set(BOARD_OFFSET + data.x * CELL_SIZE, 0, BOARD_OFFSET + data.y * CELL_SIZE); scene.add(mesh);
+                const tile = { id: data.id, x: data.x, y: data.y, type: data.type, level: data.level, specialType: data.specialType, isDark: data.isDark, mesh: mesh, scale: 1, targetGrid: {x: data.x, y: data.y}, mergedInto: null, merged: false };
+                mesh.userData.tileObj = tile; grid[data.x][data.y] = tile; tiles.push(tile);
+            });
+            updatePopulation(0); updateHappiness(0); updateFundsUI(); document.getElementById('date').innerText = `Ano ${year}, Sem ${week}`; updateFoliageVisibility(); document.getElementById('btn-restart').classList.add('hidden');
+            if (currentEvent) {
+                currentEvent.targetTile = tiles.find(t => t.id === currentEvent.targetTileId);
+                if (!currentEvent.targetTile) {
+                    let pTargets = tiles.filter(t => t.type === 'building' && !t.isDark && (currentEvent.type === 'hospital' || (t.level >= 2 && t.level <= 5)));
+                    if (pTargets.length > 0) { currentEvent.targetTile = pTargets[Math.floor(Math.random() * pTargets.length)]; currentEvent.targetTileId = currentEvent.targetTile.id; } 
+                    else { currentEvent = null; showMessage("Secretária Sarah", "👩‍💼", "Crise evitada através de viagem no tempo!", "border-purple-500"); }
+                }
+                if (currentEvent) { currentEvent.targetTile.mesh.add(currentEvent.indicator); updateEventUI(); }
+            } else { showMessage("Secretária Sarah", "👩‍💼", "Viagem no tempo bem-sucedida! Retomando os planos.", "border-purple-500"); }
+        }
+
+        function toggleDemolish() {
+            if (gameState === 'DEMOLISH_MODE') {
+                gameState = 'IDLE'; document.getElementById('btn-demolish').classList.remove('demolish-active'); document.getElementById('demolish-price').classList.replace('text-white', 'text-yellow-700');
+                if (currentEvent) updateEventUI(); else showMessage("Secretária Sarah", "👩‍💼", "Demolição cancelada. Vamos voltar ao planejamento!", "border-blue-500");
+            } else if (gameState === 'IDLE') {
+                if (funds < 50) return;
+                gameState = 'DEMOLISH_MODE'; document.getElementById('btn-demolish').classList.add('demolish-active'); document.getElementById('demolish-price').classList.replace('text-yellow-700', 'text-white');
+                showMessage("Construtor Beto", "👷‍♂️", "Pronto para liberar espaço, Chefe! Toque em qualquer construção para demoli-la por $50.", "border-orange-500");
+            }
+        }
+        function executeDemolish(tile) {
+            if (funds < 50 || gameState !== 'DEMOLISH_MODE') return;
+            saveState(); funds -= 50; updateFundsUI(); createDemolitionEffect(tile.mesh.position.x, tile.mesh.position.z);
+            sfx.demolish(); 
+            scene.remove(tile.mesh); grid[tile.x][tile.y] = null; tiles = tiles.filter(t => t !== tile);
+            if (currentEvent && currentEvent.targetTile === tile) { currentEvent = null; updateToolsUI(); } else if (currentEvent) updateEventUI(); 
+            updateFoliageVisibility(); toggleDemolish(); gameState = 'IDLE'; document.getElementById('btn-restart').classList.add('hidden');
+            if (!currentEvent) showMessage("Construtor Beto", "👷‍♂️", "Bum! Construção demolida.", "border-orange-500");
+        }
+
+        function isBoardFull() {
+            if (getEmptySpots().length > 0) return false;
+            for(let x=0; x<GRID_SIZE; x++) for(let y=0; y<GRID_SIZE; y++) { const t = grid[x][y]; if (x < GRID_SIZE - 1 && t.type === grid[x+1][y].type && t.level === grid[x+1][y].level && !t.isDark && !grid[x+1][y].isDark && t.type !== 'special' && t.type !== 'landmark') return false; if (y < GRID_SIZE - 1 && t.type === grid[x][y+1].type && t.level === grid[x][y+1].level && !t.isDark && !grid[x][y+1].isDark && t.type !== 'special' && t.type !== 'landmark') return false; }
+            return true;
+        }
+        function getEmptySpots() { const s=[]; for(let x=0; x<GRID_SIZE; x++) for(let y=0; y<GRID_SIZE; y++) if(!grid[x][y]) s.push({x,y}); return s; }
+        function updateFoliageVisibility() { for(let x=0; x<GRID_SIZE; x++) for(let y=0; y<GRID_SIZE; y++) if(foliageGrid[x][y]) foliageGrid[x][y].visible = !grid[x][y]; }
+        function checkGameOver() {
+            if (isBoardFull()) {
+                gameState = 'IDLE'; document.getElementById('msg-box').classList.remove('ring-4', 'ring-red-500', 'animate-pulse'); 
+                triggerGameOver("full"); showMessage("Secretária Sarah", "👩‍💼", `Cidade concluída! Estamos sem espaço. População Final: ${population}.`, "border-emerald-500");
+                return true;
+            } return false;
+        }
+
+        // Leaderboard logic
+        async function triggerGameOver(reason) {
+            gameState = 'GAME_OVER_PROMPT';
+            document.getElementById('final-pop').innerText = population;
+            document.getElementById('final-hap').innerText = happiness;
+            document.getElementById('final-year').innerText = year;
+            document.getElementById('name-modal').classList.remove('hidden');
+            document.getElementById('btn-restart').classList.remove('hidden'); 
+        }
+
+        document.getElementById('btn-leaderboard').onclick = async () => {
+            document.getElementById('leaderboard-modal').classList.remove('hidden');
+            const list = document.getElementById('leaderboard-list');
+            if (!isSupabaseEnabled) { list.innerHTML = '<div class="text-center text-slate-500 py-4 font-bold text-sm">Supabase não configurado.<br>Adicione URL e Anon Key no código.</div>'; return; }
+            list.innerHTML = '<div class="text-center text-slate-500 py-4 font-bold animate-pulse">Carregando recordes...</div>';
+            try {
+                const { data: scores, error } = await supabase.from('leaderboard').select('*').order('population', { ascending: false }).order('happiness', { ascending: false }).limit(50);
+                if (error) throw error;
+                
+                if (!scores || scores.length === 0) { list.innerHTML = '<div class="text-center text-slate-500 py-4 font-bold text-sm">Nenhum prefeito registrado ainda.<br>Seja o primeiro!</div>'; return; }
+                list.innerHTML = scores.map((s,i) => `
+                    <div class="flex justify-between items-center p-2 border-b border-slate-300 last:border-0 hover:bg-[#e4dfd5] transition-colors">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <span class="font-black text-slate-400 w-5 text-right shrink-0">${i+1}.</span>
+                            <span class="font-bold text-slate-800 truncate" style="max-width: 100px;">${s.name}</span>
+                        </div>
+                        <div class="flex gap-2 text-[11px] md:text-xs font-black text-right shrink-0">
+                            <span class="text-blue-700 w-14">👥 ${s.population}</span>
+                            <span class="text-green-700 w-12">💚 ${s.happiness}</span>
+                            <span class="text-slate-600 w-14">📅 Ano ${s.year}</span>
+                        </div>
+                    </div>`).join('');
+            } catch (e) { console.error("Error fetching leaderboard", e); list.innerHTML = '<div class="text-center text-red-500 py-4 font-bold">Falha ao carregar recordes.</div>'; }
+        };
+
+        document.getElementById('btn-close-leaderboard').onclick = () => document.getElementById('leaderboard-modal').classList.add('hidden');
+        document.getElementById('btn-skip-score').onclick = () => document.getElementById('name-modal').classList.add('hidden');
+
+        document.getElementById('btn-submit-score').onclick = async () => {
+            const nameInput = document.getElementById('player-name'); const name = nameInput.value.trim() || 'Prefeito Anônimo'; const btn = document.getElementById('btn-submit-score');
+            if (isSupabaseEnabled) {
+                btn.innerText = "Salvando..."; btn.disabled = true;
+                try { 
+                    const { error } = await supabase.from('leaderboard').insert([{ name: name, population: population, happiness: happiness, year: year, timestamp: Date.now() }]);
+                    if (error) throw error;
+                } catch(e) { console.error("Save error", e); }
+                btn.innerText = "Salvar Pontuação"; btn.disabled = false;
+            }
+            document.getElementById('name-modal').classList.add('hidden'); document.getElementById('btn-leaderboard').click();
+        };
+
+        function setupInputs() {
+            const dom = renderer.domElement; const intersectPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            let touchStartGridX = null, touchStartGridY = null, hoveredGridX = 3, hoveredGridY = 3, touchStartX = 0, touchStartY = 0, isTap = false;
+            
+            dom.addEventListener('pointermove', (e) => { 
+                const rect = dom.getBoundingClientRect(); mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1; mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera); const targetPoint = new THREE.Vector3();
+                if (raycaster.ray.intersectPlane(intersectPlane, targetPoint)) {
+                    hoveredGridX = Math.max(0, Math.min(GRID_SIZE - 1, Math.round((targetPoint.x - BOARD_OFFSET) / CELL_SIZE))); hoveredGridY = Math.max(0, Math.min(GRID_SIZE - 1, Math.round((targetPoint.z - BOARD_OFFSET) / CELL_SIZE)));
+                }
+                if(Math.abs(e.clientX - touchStartX) > 10 || Math.abs(e.clientY - touchStartY) > 10) isTap = false;
+            });
+            
+            window.addEventListener('keydown', (e) => {
+                if (gameState !== 'IDLE') return;
+                switch(e.key) { case 'ArrowUp': case 'w': move({x: 0, y: -1}, hoveredGridX, hoveredGridY); break; case 'ArrowDown': case 's': move({x: 0, y: 1}, hoveredGridX, hoveredGridY); break; case 'ArrowLeft': case 'a': move({x: -1, y: 0}, hoveredGridX, hoveredGridY); break; case 'ArrowRight': case 'd': move({x: 1, y: 0}, hoveredGridX, hoveredGridY); break; }
+            });
+
+            dom.addEventListener('pointerdown', (e) => {
+                touchStartX = e.clientX; touchStartY = e.clientY; isTap = true;
+                const rect = dom.getBoundingClientRect(); mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1; mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera); const targetPoint = new THREE.Vector3();
+                
+                if(raycaster.ray.intersectPlane(intersectPlane, targetPoint)) {
+                    let rawX = Math.round((targetPoint.x - BOARD_OFFSET) / CELL_SIZE);
+                    let rawY = Math.round((targetPoint.z - BOARD_OFFSET) / CELL_SIZE);
+                    
+                    touchStartGridX = Math.max(0, Math.min(GRID_SIZE - 1, rawX)); 
+                    touchStartGridY = Math.max(0, Math.min(GRID_SIZE - 1, rawY));
+
+                    if (gameState === 'DEMOLISH_MODE') {
+                        if (rawX >= 0 && rawX < GRID_SIZE && rawY >= 0 && rawY < GRID_SIZE) {
+                            const targetTile = grid[rawX][rawY];
+                            if (targetTile) executeDemolish(targetTile);
+                        }
+                    }
+                }
+            });
+
+            dom.addEventListener('pointerup', (e) => {
+                if (gameState !== 'IDLE' || isTap) return; 
+                let dx = e.clientX - touchStartX; let dy = e.clientY - touchStartY;
+                if (Math.abs(dx) > Math.abs(dy)) { if (dx > 30) move({x: 1, y: 0}, touchStartGridX, touchStartGridY); else if (dx < -30) move({x: -1, y: 0}, touchStartGridX, touchStartGridY); } 
+                else { if (dy > 30) move({x: 0, y: 1}, touchStartGridX, touchStartGridY); else if (dy < -30) move({x: 0, y: -1}, touchStartGridX, touchStartGridY); }
+            });
+            dom.addEventListener('touchmove', e => e.preventDefault(), {passive: false});
+        }
+
+        initThree(); initGame(); setupInputs(); animate();
+    </script>
+</body>
+</html>
